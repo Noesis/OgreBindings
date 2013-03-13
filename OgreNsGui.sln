@@ -1,0 +1,44 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BasicOgreSample", "Samples\BasicOgreSample\BasicOgreSample.vcxproj", "{834A04BD-22BB-4E21-9872-47A3CC9FF220}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7638FE88-7B8B-4926-A690-81E658B2D847} = {7638FE88-7B8B-4926-A690-81E658B2D847}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OgreTicTacToe", "Samples\TicTacToe\OgreTicTacToe.vcxproj", "{35F9EE99-4E59-4F77-869B-9B06F143CF24}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7638FE88-7B8B-4926-A690-81E658B2D847} = {7638FE88-7B8B-4926-A690-81E658B2D847}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{C116E24B-9397-483A-AD76-BBB67EAE842F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OgreNsGuiBinding", "OgreNsGuiBindings\OgreNsGuiBinding.vcxproj", "{7638FE88-7B8B-4926-A690-81E658B2D847}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{834A04BD-22BB-4E21-9872-47A3CC9FF220}.Debug|Win32.ActiveCfg = Debug|Win32
+		{834A04BD-22BB-4E21-9872-47A3CC9FF220}.Debug|Win32.Build.0 = Debug|Win32
+		{834A04BD-22BB-4E21-9872-47A3CC9FF220}.Release|Win32.ActiveCfg = Release|Win32
+		{834A04BD-22BB-4E21-9872-47A3CC9FF220}.Release|Win32.Build.0 = Release|Win32
+		{35F9EE99-4E59-4F77-869B-9B06F143CF24}.Debug|Win32.ActiveCfg = Debug|Win32
+		{35F9EE99-4E59-4F77-869B-9B06F143CF24}.Debug|Win32.Build.0 = Debug|Win32
+		{35F9EE99-4E59-4F77-869B-9B06F143CF24}.Release|Win32.ActiveCfg = Release|Win32
+		{35F9EE99-4E59-4F77-869B-9B06F143CF24}.Release|Win32.Build.0 = Release|Win32
+		{7638FE88-7B8B-4926-A690-81E658B2D847}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7638FE88-7B8B-4926-A690-81E658B2D847}.Debug|Win32.Build.0 = Debug|Win32
+		{7638FE88-7B8B-4926-A690-81E658B2D847}.Release|Win32.ActiveCfg = Release|Win32
+		{7638FE88-7B8B-4926-A690-81E658B2D847}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{834A04BD-22BB-4E21-9872-47A3CC9FF220} = {C116E24B-9397-483A-AD76-BBB67EAE842F}
+		{35F9EE99-4E59-4F77-869B-9B06F143CF24} = {C116E24B-9397-483A-AD76-BBB67EAE842F}
+	EndGlobalSection
+EndGlobal
