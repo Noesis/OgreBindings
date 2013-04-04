@@ -47,7 +47,6 @@ void Sample::setupEngine()
 	// Setup NsGui
 	Noesis_Init(mSceneMgr);
 	Noesis_LoadXAML(&mUIRoot, &mUIRenderer, "Gui/Samples/Time.xaml");
-	Noesis_RendererClearMode(mUIRenderer, 1); // Manual
 	Noesis_RendererAntialiasingMode(mUIRenderer, 1); // PAA
 
 	// Setup input

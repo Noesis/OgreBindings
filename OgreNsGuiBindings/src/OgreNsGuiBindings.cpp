@@ -210,8 +210,6 @@ namespace
 						if (gRenderTarget != 0 && gDepthBuffer != 0)
 						{
 							gStateBlock->Capture();
-
-							gD3D9Device->Clear(0, NULL, D3DCLEAR_STENCIL, 0, 1.0f, 1);
 							NsGetSystem<IDX9RenderSystem>()->SyncInternalState();
 
 							NsSize numRenderers = gRenderers.size();
@@ -422,13 +420,6 @@ extern "C" NS_DLL_EXPORT void Noesis_LoadXAML(void** root, void** uiRenderer, co
 			*uiRenderer = renderer.GetPtr();
 		}
 	}
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_RendererClearMode(void* uiRenderer, int mode)
-{
-	IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
-	renderer->SetSurfaceClearMode((SurfaceClearMode)mode);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

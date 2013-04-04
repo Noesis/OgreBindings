@@ -30,7 +30,6 @@ extern "C" NS_DLL_EXPORT void Noesis_LoadXAML(void** root, void** uiRenderer, co
 // Modifies renderer settings
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //@{
-extern "C" NS_DLL_EXPORT void Noesis_RendererClearMode(void* uiRenderer, int mode);
 extern "C" NS_DLL_EXPORT void Noesis_RendererAntialiasingMode(void* uiRenderer, int mode);
 extern "C" NS_DLL_EXPORT void Noesis_RendererTessMode(void* uiRenderer, int mode);
 extern "C" NS_DLL_EXPORT void Noesis_RendererTessQuality(void* uiRenderer, int quality);
