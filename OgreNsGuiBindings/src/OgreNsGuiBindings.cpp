@@ -54,7 +54,6 @@ namespace
 	IDirect3DStateBlock9* gStateBlock = 0;
 	IDirect3DSurface9* gRenderTarget = 0;
 	IDirect3DSurface9* gDepthBuffer = 0;
-	Drawing::Recti gViewport;
 
 	class OgreRenderer;
 	OgreRenderer* gOgreRender = 0;
@@ -63,20 +62,10 @@ namespace
 
 	struct RendererInfo
 	{
-		Ptr<IVGLSurface> surface;
-		Ptr<RenderCommands> commands;
+		RenderCommands commands;
 	};
+
 	NsMap<Ptr<IRenderer>, RendererInfo> gRenderersInfo;
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-	Ptr<IVGLSurface> CreateVGLSurface()
-	{
-		const Ptr<IDX9RenderSystem>& renderSystem = NsGetSystem<IDX9RenderSystem>();
-
-		Ptr<IRenderTarget2D> target = renderSystem->WrapRenderTarget(gRenderTarget, gDepthBuffer);
-
-		return NsGetSystem<IVGLSystem>()->CreateSurface(target.GetPtr());
-	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	void ReleaseRenderTargets(IDirect3DSurface9*& renderTarget, IDirect3DSurface9*& depthBuffer)
@@ -122,6 +111,12 @@ namespace
 				D3DSURFACE_DESC rt;
 				gRenderTarget->GetDesc(&rt);
 
+				NsSize numRenderers = gRenderers.size();
+				for (NsSize i = 0; i < numRenderers; ++i)
+				{
+					gRenderers[i]->SetSize(rt.Width, rt.Height);
+				}
+
 				NS_LOG_OGRE("RenderTarget changed: [0x%p|0x%p] %ux%u", gRenderTarget, gDepthBuffer,
 					rt.Width, rt.Height);
 			}
@@ -131,25 +126,6 @@ namespace
 		ReleaseRenderTargets(renderTarget, depthBuffer);
 
 		return changed;
-	}
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-	void UpdateViewport()
-	{
-		D3DVIEWPORT9 vp;
-		gD3D9Device->GetViewport(&vp);
-
-		// update surface viewport
-		if (gViewport.x != (NsInt)vp.X || gViewport.y != (NsInt)vp.Y ||
-			gViewport.width != (NsInt)vp.Width || gViewport.height != (NsInt)vp.Height)
-		{
-			gViewport.x = vp.X;
-			gViewport.y = vp.Y;
-			gViewport.width = vp.Width;
-			gViewport.height = vp.Height;
-
-			NS_LOG_OGRE("Viewport changed: (%d,%d,%d,%d)", vp.X, vp.Y, vp.Width, vp.Height);
-		}
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -204,65 +180,30 @@ namespace
 				{
 					if (gStateBlock != 0)
 					{
-						NsBool rtChanged = UpdateRenderTargets();
-						UpdateViewport();
+						UpdateRenderTargets();
 
 						if (gRenderTarget != 0 && gDepthBuffer != 0)
 						{
 							gStateBlock->Capture();
-							NsGetSystem<IDX9RenderSystem>()->SyncInternalState();
 
+							// Offscreen Render
 							NsSize numRenderers = gRenderers.size();
 							for (NsSize i = 0; i < numRenderers; ++i)
 							{
 								const Ptr<IRenderer>& renderer = gRenderers[i];
 								RendererInfo& ri = gRenderersInfo[renderer];
+								renderer->Render(ri.commands.offscreenCommands.GetPtr());
+							}
 
-								// if render target changed destroy surface to free resources
-								if (rtChanged)
-								{
-									renderer->SetSurface(0);
-									{
-										ri.surface.Reset();
-									}
-								}
+							// Main Screen Render
+							gD3D9Device->SetRenderTarget(0, gRenderTarget);
+							gD3D9Device->SetDepthStencilSurface(gDepthBuffer);
 
-								// create a new surface if necessary
-								NsBool surfaceCreated = false;
-								if (!ri.surface)
-								{
-									Ptr<IVGLSurface> surface = CreateVGLSurface();
-									{
-										ri.surface = surface;
-									}
-
-									surfaceCreated = true;
-									NS_LOG_OGRE("Surfaces created");
-								}
-
-								// read render commands
-								if (surfaceCreated)
-								{
-									// commands generated using old render targets can't be used anymore
-									renderer->WaitForUpdate();
-									{
-										ri.commands.Reset();
-									}
-								}
-								else
-								{
-									// get render commands generated in the update thread
-									Ptr<RenderCommands> commands;
-									{
-										commands = ri.commands;
-									}
-
-									if (commands)
-									{
-										renderer->Render(commands.GetPtr());
-										renderer->WaitForRender();
-									}
-								}
+							for (NsSize i = 0; i < numRenderers; ++i)
+							{
+								const Ptr<IRenderer>& renderer = gRenderers[i];
+								RendererInfo& ri = gRenderersInfo[renderer];
+								renderer->Render(ri.commands.commands.GetPtr());
 							}
 
 							gStateBlock->Apply();
@@ -276,6 +217,7 @@ namespace
 			}
 			catch (Ogre::RenderingAPIException* e)
 			{
+				e;
 				NS_LOG_OGRE(e->getDescription());
 			}
 		}
@@ -330,8 +272,7 @@ namespace
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 void NoesisErrorHandler(const NsChar* filename, NsInt line, const NsChar* desc)
 {
-	printf("\nERROR: %s\n\n", desc);
-	exit(1);
+	throw std::exception(desc);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -342,11 +283,12 @@ extern "C" NS_DLL_EXPORT void Noesis_Init(Ogre::SceneManager* sceneMgr)
 	if (gD3D9Device != 0)
 	{
 		Noesis::Core::SetErrorHandler(NoesisErrorHandler);
-
 		NsGetKernel()->Init();
-		IResourceSystem::SetFileSystem(new OgreNsGuiFileSystem());
+
 		// Configure systems before their initialization
 		//@{
+		Ptr<IFileSystem> ogreFileSystem = *new OgreNsGuiFileSystem();
+		IResourceSystem::SetFileSystem(ogreFileSystem.GetPtr());
 
 		gD3D9Device->CreateStateBlock(D3DSBT_ALL, &gStateBlock);
 		IDX9RenderSystem::SetDevice(gD3D9Device);
@@ -385,6 +327,7 @@ extern "C" NS_DLL_EXPORT void Noesis_Tick()
 		NsGetKernel()->Tick();
 	}
 }
+
 NS_DECLARE_SYMBOL(ResourceSystem) 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 extern "C" NS_DLL_EXPORT void Noesis_LoadXAML(void** root, void** uiRenderer, const char* xamlFile,
@@ -392,18 +335,14 @@ extern "C" NS_DLL_EXPORT void Noesis_LoadXAML(void** root, void** uiRenderer, co
 {
 	if (gD3D9Device != 0)
 	{
-		Ptr<IUIResource> resource;
-		auto resourceSystem = NsGetSystem<IResourceSystem>();
+		Ptr<FrameworkElement> element = LoadXaml<FrameworkElement>(xamlFile);
 
-		resource = NsDynamicCast<Ptr<IUIResource> >(resourceSystem->Load(xamlFile));
-		Ptr<FrameworkElement> element(NsDynamicCast<FrameworkElement*>(resource->GetRoot()));
 		if (element)
 		{
 			if (!String::IsNullOrEmpty(resourcesFile))
 			{
-				resource = NsDynamicCast<Ptr<IUIResource> >(resourceSystem->Load(resourcesFile));
-				Ptr<ResourceDictionary> resources(NsDynamicCast<ResourceDictionary*>(
-					resource->GetRoot()));
+				Ptr<ResourceDictionary> resources = LoadXaml<ResourceDictionary>(resourcesFile);
+
 				if (resources)
 				{
 					element->GetResources()->GetMergedDictionaries()->Add(resources.GetPtr());
@@ -455,23 +394,8 @@ extern "C" NS_DLL_EXPORT void Noesis_UpdateRenderer(void* uiRenderer, double tim
 {
 	Ptr<IRenderer> renderer(static_cast<IRenderer*>(uiRenderer));
 	RendererInfo& ri = gRenderersInfo[renderer];
-
-	Ptr<IVGLSurface> surface;
-	Recti viewport;
-	{
-		surface = ri.surface;
-		viewport = gViewport;
-	}
-	
-	if (surface)
-	{
-		renderer->SetSurface(surface.GetPtr(), &viewport);
-		renderer->Update(time);
-
-		{
-			ri.commands.Reset(renderer->WaitForUpdate());
-		}
-	}
+	renderer->Update(time);
+	ri.commands = renderer->WaitForUpdate();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -479,7 +403,6 @@ extern "C" NS_DLL_EXPORT bool Noesis_HitTest(void* root, float x, float y)
 {
 	Visual* visual = static_cast<Visual*>(root);
 	Drawing::Point point(x, y);
-
 	return VisualTreeHelper::HitTest(visual, point).visualHit != 0;
 }
 

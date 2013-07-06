@@ -7,6 +7,7 @@
 #ifndef __GUI_OGREFILESYSTEM_H__
 #define __GUI_OGREFILESYSTEM_H__
 
+
 #include <Noesis.h>
 #include <NsCore/ReflectionDeclare.h>
 #include <NsCore/Map.h>
@@ -15,6 +16,7 @@
 #include <NsFile/FileId.h>
 #include <NsFile/BaseFileSystem.h>
 #include <OgrePrerequisites.h>
+
 
 namespace Noesis
 {

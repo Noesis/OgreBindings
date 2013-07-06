@@ -6,6 +6,9 @@
 
 #include "OgreNsGuiStream.h"
 
+#include <NsCore/ReflectionImplement.h>
+
+
 using namespace Noesis;
 using namespace Noesis::Core;
 
@@ -111,6 +114,9 @@ namespace Noesis
 			}
 		}
 
-		NS_IMPLEMENT_REFLECTION_(OgreNsGuiStream)
+		NS_IMPLEMENT_REFLECTION(OgreNsGuiStream)
+		{
+			NsImpl<IStream>();
+		}
 	}
 }

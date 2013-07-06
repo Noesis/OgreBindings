@@ -4,6 +4,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+#include "OgreNsGuiStream.h"
+
 #include <OgreNsGuiFileSystem.h>
 #include <NsCore/IStream.h>
 #include <NsCore/ITextReader.h>
@@ -16,11 +18,12 @@
 #include <NsResource/ResourceTools.h>
 #include <NsCore/Ptr.h>
 #include <OgreResourceGroupManager.h>
-#include "OgreNsGuiStream.h"
+
 
 using namespace Noesis::Core;
 using namespace Noesis::File;
 using namespace Noesis::Resource;
+
 
 namespace Noesis
 {
@@ -49,8 +52,7 @@ namespace Noesis
 			Ogre::String fName = (filename.GetFileName() + filename.GetExtension()).c_str();
 			if (Ogre::ResourceGroupManager::getSingleton().resourceExistsInAnyGroup(fName))
 			{
-				Noesis::Core::IStream* istream = new Noesis::Gui::OgreNsGuiStream(Ogre::ResourceGroupManager::getSingleton().openResource(fName));
-				return Ptr<Noesis::Core::IStream>(istream);
+				return *new Noesis::Gui::OgreNsGuiStream(Ogre::ResourceGroupManager::getSingleton().openResource(fName));
 			}
 			else
 			{

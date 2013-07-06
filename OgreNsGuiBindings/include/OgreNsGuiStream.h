@@ -7,10 +7,13 @@
 #ifndef __GUI_OGRESTREAM_H__
 #define __GUI_OGRESTREAM_H__
 
+
 #include <Noesis.h>
 #include <NsCore/ReflectionDeclare.h>
+#include <NsCore/BaseComponent.h>
 #include <NsCore/IStream.h>
 #include <OgreDataStream.h>
+
 
 namespace Noesis
 {
@@ -19,7 +22,7 @@ namespace Noesis
 		////////////////////////////////////////////////////////////////////////////////////////////////////
 		/// OgreStream
 		////////////////////////////////////////////////////////////////////////////////////////////////////
-		class OgreNsGuiStream : public Core::IStream
+		class OgreNsGuiStream : public Core::BaseComponent, public Core::IStream
 		{
 		public:
 			/// Constructor
@@ -64,7 +67,7 @@ namespace Noesis
 		private:
 			Ogre::DataStreamPtr mDataStream;
 
-			NS_DECLARE_REFLECTION(OgreNsGuiStream, Core::IStream)
+			NS_DECLARE_REFLECTION(OgreNsGuiStream, BaseComponent)
 		};
 	}
 }

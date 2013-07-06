@@ -36,11 +36,6 @@ using namespace Noesis::Gui;
 NS_DECLARE_SYMBOL(Player1)
 NS_DECLARE_SYMBOL(Player2)
 
-// EASTL string needs this function
-int Vsnprintf8(char8_t* pDestination, size_t n, const char8_t* pFormat, va_list arguments)
-{
-	return _vsnprintf(pDestination, n, pFormat, arguments);
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 TicTacToeLogic::TicTacToeLogic(Noesis::Gui::FrameworkElement* uiRoot): mRoot(uiRoot)
