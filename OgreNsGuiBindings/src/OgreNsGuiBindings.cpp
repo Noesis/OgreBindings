@@ -386,7 +386,7 @@ extern "C" NS_DLL_EXPORT void Noesis_RendererTessQuality(void* uiRenderer, int q
 extern "C" NS_DLL_EXPORT void Noesis_RendererDebugFlags(void* uiRenderer, int flags)
 {
 	IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
-	renderer->SetDebugFlags((NsUInt32)flags);
+	renderer->SetFlags((NsUInt32)flags);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
