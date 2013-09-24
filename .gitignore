@@ -1,1 +1,5 @@
 noesis.dll
+Noesis.lib
+Dependencies/include/NoesisGUI/
+obj/
+ipch/
