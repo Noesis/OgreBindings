@@ -549,17 +549,15 @@ extern "C" NS_DLL_EXPORT void Noesis_Init(Ogre::SceneManager* sceneMgr)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 extern "C" NS_DLL_EXPORT void Noesis_Shutdown()
 {
-	if (gD3D9Device != 0)
-	{
-		delete gOgreRender;
-		gOgreRender = 0;
-		{
-			gRenderers.clear();
-			gRenderersInfo.clear();
-		}
+    if (gD3D9Device != 0)
+    {
+        delete gOgreRender;
+        gOgreRender = 0;
+        gRenderers.set_capacity(0);
+        gRenderersInfo.clear();
 
-		NsGetKernel()->Shutdown();
-	}
+        NsGetKernel()->Shutdown();
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
