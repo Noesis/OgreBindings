@@ -4,7 +4,7 @@ This source file is part of OGRE
     (Object-oriented Graphics Rendering Engine)
 For the latest info, see http://www.ogre3d.org/
 
-Copyright (c) 2000-2012 Torus Knot Software Ltd
+Copyright (c) 2000-2013 Torus Knot Software Ltd
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -140,15 +140,15 @@ namespace Ogre {
 		/// mipmap level. This method must be called after the D3D texture object was created
 		void _createSurfaceList(IDirect3DDevice9* d3d9Device, TextureResources* textureResources);
 
-        /// overriden from Resource
+        /// overridden from Resource
         void loadImpl();		 
 		/// Loads this texture into the specified device.
 		void loadImpl(IDirect3DDevice9* d3d9Device);
-        /// overriden from Resource
+        /// overridden from Resource
         void prepareImpl();
-        /// overriden from Resource
+        /// overridden from Resource
         void unprepareImpl();
-		/// overriden from Resource
+		/// overridden from Resource
 		void postLoadImpl();
 
 		/// gets the texture resources attached to the given device.
@@ -218,92 +218,6 @@ namespace Ogre {
 		virtual void notifyOnDeviceReset(IDirect3DDevice9* d3d9Device);	
     };
 
-    /** Specialisation of SharedPtr to allow SharedPtr to be assigned to D3D9TexturePtr 
-    @note Has to be a subclass since we need operator=.
-    We could templatise this instead of repeating per Resource subclass, 
-    except to do so requires a form VC6 does not support i.e.
-    ResourceSubclassPtr<T> : public SharedPtr<T>
-    */
-    class _OgreD3D9Export D3D9TexturePtr : public SharedPtr<D3D9Texture> 
-    {
-    public:
-        D3D9TexturePtr() : SharedPtr<D3D9Texture>() {}
-        explicit D3D9TexturePtr(D3D9Texture* rep) : SharedPtr<D3D9Texture>(rep) {}
-        D3D9TexturePtr(const D3D9TexturePtr& r) : SharedPtr<D3D9Texture>(r) {} 
-        D3D9TexturePtr(const ResourcePtr& r) : SharedPtr<D3D9Texture>()
-        {
-			// lock & copy other mutex pointer
-            OGRE_MUTEX_CONDITIONAL(r.OGRE_AUTO_MUTEX_NAME)
-            {
-			    OGRE_LOCK_MUTEX(*r.OGRE_AUTO_MUTEX_NAME)
-			    OGRE_COPY_AUTO_SHARED_MUTEX(r.OGRE_AUTO_MUTEX_NAME)
-                pRep = static_cast<D3D9Texture*>(r.getPointer());
-                pUseCount = r.useCountPointer();
-                if (pUseCount)
-                {
-                    ++(*pUseCount);
-                }
-            }
-        }
-		D3D9TexturePtr(const TexturePtr& r) : SharedPtr<D3D9Texture>()
-		{
-			*this = r;
-		}
-
-        /// Operator used to convert a ResourcePtr to a D3D9TexturePtr
-        D3D9TexturePtr& operator=(const ResourcePtr& r)
-        {
-            if (pRep == static_cast<D3D9Texture*>(r.getPointer()))
-                return *this;
-            release();
-			// lock & copy other mutex pointer
-            OGRE_MUTEX_CONDITIONAL(r.OGRE_AUTO_MUTEX_NAME)
-            {
-			    OGRE_LOCK_MUTEX(*r.OGRE_AUTO_MUTEX_NAME)
-			    OGRE_COPY_AUTO_SHARED_MUTEX(r.OGRE_AUTO_MUTEX_NAME)
-                pRep = static_cast<D3D9Texture*>(r.getPointer());
-                pUseCount = r.useCountPointer();
-                if (pUseCount)
-                {
-                    ++(*pUseCount);
-                }
-            }
-			else
-			{
-				// RHS must be a null pointer
-				assert(r.isNull() && "RHS must be null if it has no mutex!");
-				setNull();
-			}
-            return *this;
-        }
-        /// Operator used to convert a TexturePtr to a D3D9TexturePtr
-        D3D9TexturePtr& operator=(const TexturePtr& r)
-        {
-            if (pRep == static_cast<D3D9Texture*>(r.getPointer()))
-                return *this;
-            release();
-			// lock & copy other mutex pointer
-            OGRE_MUTEX_CONDITIONAL(r.OGRE_AUTO_MUTEX_NAME)
-            {
-			    OGRE_LOCK_MUTEX(*r.OGRE_AUTO_MUTEX_NAME)
-			    OGRE_COPY_AUTO_SHARED_MUTEX(r.OGRE_AUTO_MUTEX_NAME)
-                pRep = static_cast<D3D9Texture*>(r.getPointer());
-                pUseCount = r.useCountPointer();
-                if (pUseCount)
-                {
-                    ++(*pUseCount);
-                }
-            }
-			else
-			{
-				// RHS must be a null pointer
-				assert(r.isNull() && "RHS must be null if it has no mutex!");
-				setNull();
-			}
-            return *this;
-        }
-    };
-
     /// RenderTexture implementation for D3D9
     class _OgreD3D9Export D3D9RenderTexture : public RenderTexture
     {
@@ -318,7 +232,7 @@ namespace Ogre {
 		bool requiresTextureFlipping() const { return false; }
 
 		/// Override needed to deal with FSAA
-		void swapBuffers(bool waitForVSync = true);
+		void swapBuffers();
 
 	};
 

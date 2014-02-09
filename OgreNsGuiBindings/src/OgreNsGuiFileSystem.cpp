@@ -4,9 +4,9 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+#include "OgreNsGuiFileSystem.h"
 #include "OgreNsGuiStream.h"
 
-#include <OgreNsGuiFileSystem.h>
 #include <NsCore/IStream.h>
 #include <NsCore/ITextReader.h>
 #include <NsCore/Stream.h>
@@ -23,44 +23,37 @@
 using namespace Noesis::Core;
 using namespace Noesis::File;
 using namespace Noesis::Resource;
+using namespace Noesis::Gui;
 
 
-namespace Noesis
+////////////////////////////////////////////////////////////////////////////////////////////////////
+OgreNsGuiFileSystem::OgreNsGuiFileSystem(const NsChar* root): mRoot(root)
 {
-	namespace Gui
-	{
-		////////////////////////////////////////////////////////////////////////////////////////////////////
-		OgreNsGuiFileSystem::OgreNsGuiFileSystem()
-		{
-		}
-
-		////////////////////////////////////////////////////////////////////////////////////////////////////
-		OgreNsGuiFileSystem::~OgreNsGuiFileSystem()
-		{
-		}
-
-		////////////////////////////////////////////////////////////////////////////////////////////////////
-		NsBool OgreNsGuiFileSystem::FileExists(const Noesis::File::FileId& filename) const
-		{
-			Ogre::String fName = (filename.GetFileName() + filename.GetExtension()).c_str();
-			return Ogre::ResourceGroupManager::getSingleton().resourceExistsInAnyGroup(fName);
-		}
-
-		////////////////////////////////////////////////////////////////////////////////////////////////////
-		Ptr<Noesis::Core::IStream> OgreNsGuiFileSystem::OpenRead(const Noesis::File::FileId& filename) const
-		{			
-			Ogre::String fName = (filename.GetFileName() + filename.GetExtension()).c_str();
-			if (Ogre::ResourceGroupManager::getSingleton().resourceExistsInAnyGroup(fName))
-			{
-				return *new Noesis::Gui::OgreNsGuiStream(Ogre::ResourceGroupManager::getSingleton().openResource(fName));
-			}
-			else
-			{
-				NS_ERROR("File '%s' not found", filename.GetStr());
-			}
-		}
-
-		////////////////////////////////////////////////////////////////////////////////////////////////////
-		NS_IMPLEMENT_REFLECTION_(OgreNsGuiFileSystem)
-	}
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+OgreNsGuiFileSystem::~OgreNsGuiFileSystem()
+{
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+NsBool OgreNsGuiFileSystem::FileExists(const Noesis::File::FileId& filename) const
+{
+    Ogre::String fName = filename.GetDirectory().c_str();
+    fName += filename.GetFileName().c_str();
+    fName += filename.GetExtension().c_str();
+	return Ogre::ResourceGroupManager::getSingleton().resourceExists(mRoot, fName);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+Ptr<Noesis::Core::IStream> OgreNsGuiFileSystem::OpenRead(const FileId& filename) const
+{			
+    Ogre::String fName = filename.GetDirectory().c_str();
+    fName += filename.GetFileName().c_str();
+    fName += filename.GetExtension().c_str();
+    return *new OgreNsGuiStream(Ogre::ResourceGroupManager::getSingleton().openResource(fName,
+        mRoot, false));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+NS_IMPLEMENT_REFLECTION_(OgreNsGuiFileSystem)

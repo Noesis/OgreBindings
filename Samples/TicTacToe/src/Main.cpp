@@ -10,6 +10,7 @@ int main( int argc, const char* argv[] ) {
 		sample.setupEngine();
 		sample.setupScene();
 		sample.startMainLoop();
+        sample.Close();
 	}
 	catch (std::exception& e)
 	{

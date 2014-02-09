@@ -32,7 +32,7 @@ void Sample::setupEngine()
 	}
 
 	// Create our main window
-	mWindow = mRoot->initialise(true, "Basic Ogre Sample");
+	mWindow = mRoot->initialise(true, "noesisGUI: Basic Ogre Sample");
 
 	// Parse resources
 	parseResources();
@@ -45,12 +45,17 @@ void Sample::setupEngine()
 	mCamera = mSceneMgr->createCamera("MyCam");
 
 	// Setup NsGui
-	Noesis_Init(mSceneMgr);
-	Noesis_LoadXAML(&mUIRoot, &mUIRenderer, "Gui/Samples/Time.xaml");
+	Noesis_Init();
+
+    Noesis_LoadXAML(&mUIRoot, &mUIRenderer, "Gui/Samples/Time.xaml");
+    //Noesis_LoadXAML(&mUIRoot, &mUIRenderer, "Gui/Samples/Menu.xaml", "Gui/Themes/NoesisStyle.xaml");
 	Noesis_RendererAntialiasingMode(mUIRenderer, 1); // PAA
 
 	// Setup input
 	setupInput();
+
+    // Add frame listener
+    mRoot->addFrameListener(this);
 }
 
 void Sample::parseResources()
@@ -107,6 +112,9 @@ void Sample::setupInput()
 void Sample::setupScene()
 {
 	mSceneMgr->setSkyBox(true, "spaceSkyBox");
+
+	// Set the scene's ambient light
+	mSceneMgr->setAmbientLight(Ogre::ColourValue(0.5f, 0.5f, 0.5f));
 
 	Ogre::Entity* pEntity = mSceneMgr->createEntity("SinbadInstance", "Sinbad.mesh");
 	Ogre::SceneNode* pNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
@@ -170,26 +178,59 @@ bool Sample::mouseReleased(const OIS::MouseEvent &e, OIS::MouseButtonID id)
 	return false;
 }
 
-void Sample::startMainLoop()
+bool Sample::frameStarted(const Ogre::FrameEvent& e)
 {
-	while(!mExitMainLoop) {
+    Noesis_GPURenderOffscreen(mUIRenderer);
+    return true;
+}
+
+bool Sample::frameRenderingQueued(const Ogre::FrameEvent& e)
+{
+    Noesis_GPURender(mUIRenderer);
+    return true;
+}
+
+void Sample::startMainLoop()
+{    
+	while(!mExitMainLoop) 
+    {
 		Ogre::WindowEventUtilities::messagePump(); 
 
 		if(mWindow->isClosed()) 
+        {
 			return; 
+        }
 
 		if(mMouse)
+        {
 			mMouse->capture();
+        }
 
 		if (mKeyboard)
+        {
 			mKeyboard->capture();
+        }
 
 		Noesis_Tick();
-		Noesis_UpdateRenderer(mUIRenderer, ((double)mRoot->getTimer()->getMilliseconds() / 1000.0));
 
-		mDance->addTime((1.0f / 60.0f));
+        int width = mWindow->getWidth();
+        int height = mWindow->getHeight();
+        double time = (double)(mRoot->getTimer()->getMilliseconds() / 1000.0);
+		Noesis_Update(mUIRenderer, time, width, height);
 
-		if(!mRoot->renderOneFrame()) 
-			return; 
+        static double lastTime = time;
+		mDance->addTime((float)(time - lastTime));
+        lastTime = time;
+
+		if(!mRoot->renderOneFrame())
+        {
+			return;
+        }
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+void Sample::Close()
+{
+    Noesis_Shutdown();
 }

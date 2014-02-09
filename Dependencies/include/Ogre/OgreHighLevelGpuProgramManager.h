@@ -4,7 +4,7 @@ This source file is part of OGRE
     (Object-oriented Graphics Rendering Engine)
 For the latest info, see http://www.ogre3d.org/
 
-Copyright (c) 2000-2012 Torus Knot Software Ltd
+Copyright (c) 2000-2013 Torus Knot Software Ltd
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,6 +33,7 @@ THE SOFTWARE.
 #include "OgreSingleton.h"
 #include "OgreException.h"
 #include "OgreHighLevelGpuProgram.h"
+#include "OgreHeaderPrefix.h"
 
 namespace Ogre {
 
@@ -87,7 +88,7 @@ namespace Ogre {
         /// @copydoc ResourceManager::createImpl
         Resource* createImpl(const String& name, ResourceHandle handle, 
             const String& group, bool isManual, ManualResourceLoader* loader,
-            const NameValuePairList* params);
+            const NameValuePairList* createParams);
 	public:
 		HighLevelGpuProgramManager();
 		~HighLevelGpuProgramManager();
@@ -99,6 +100,9 @@ namespace Ogre {
 		/** Returns whether a given high-level language is supported. */
 		bool isLanguageSupported(const String& lang);
 
+		/// Get a resource by name
+		/// @see ResourceManager::getResourceByName
+		HighLevelGpuProgramPtr getByName(const String& name, const String& groupName = ResourceGroupManager::AUTODETECT_RESOURCE_GROUP_NAME);
 
         /** Create a new, unloaded HighLevelGpuProgram. 
 		@par
@@ -154,5 +158,7 @@ namespace Ogre {
 	/** @} */
 
 }
+
+#include "OgreHeaderSuffix.h"
 
 #endif

@@ -4,7 +4,7 @@ This source file is part of OGRE
 (Object-oriented Graphics Rendering Engine)
 For the latest info, see http://www.ogre3d.org/
 
-Copyright (c) 2000-2012 Torus Knot Software Ltd
+Copyright (c) 2000-2013 Torus Knot Software Ltd
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -141,56 +141,57 @@ public:
 	/** 
 	Returns the source modifier parameters for a given texture unit
 	@return True if a valid modifier exist for the given texture unit
+    @param index Texture blend index
 	@param modType The source modification type to use
 	@param customNum The custom parameter number used to control the modification
 	*/
-	bool getSourceModifier(unsigned short index, SourceModifier& , int& customNum) const;
+	bool getSourceModifier(unsigned short index, SourceModifier& modType, int& customNum) const;
 
 	/** 
 	@see SubRenderState::copyFrom.
 	*/
 	virtual void copyFrom(const SubRenderState& rhs);
 
-	static String Type;
+    static String Type;
 
 // Protected methods
 protected:
-	
-	/** 
-	@see SubRenderState::resolveParameters.
-	*/
-	virtual bool resolveParameters(ProgramSet* programSet);
+    
+    /** 
+    @see SubRenderState::resolveParameters.
+    */
+    virtual bool resolveParameters(ProgramSet* programSet);
 
-	/** 
-	@see SubRenderState::resolveDependencies.
-	*/
-	virtual bool resolveDependencies(Ogre::RTShader::ProgramSet* programSet);
+    /** 
+    @see SubRenderState::resolveDependencies.
+    */
+    virtual bool resolveDependencies(Ogre::RTShader::ProgramSet* programSet);
 
 
-	virtual void addPSBlendInvocations(Function* psMain, 
-									ParameterPtr arg1,
-									ParameterPtr arg2,
-									ParameterPtr texel,
-									int samplerIndex,
-									const LayerBlendModeEx& blendMode,
-									const int groupOrder, 
-									int& internalCounter,
-									int targetChannels);
-	/** 
-	Adds the function invocation to the pixel shader which will modify
-	the blend sources according to the source modification parameters.
-	*/
-	void addPSModifierInvocation(Function* psMain, 
-								int samplerIndex, 
-								ParameterPtr arg1,
-								ParameterPtr arg2,
-								const int groupOrder, 
-								int& internalCounter,
-								int targetChannels);
+    virtual void addPSBlendInvocations(Function* psMain, 
+                                       ParameterPtr arg1,
+                                       ParameterPtr arg2,
+                                       ParameterPtr texel,
+                                       int samplerIndex,
+                                       const LayerBlendModeEx& blendMode,
+                                       const int groupOrder, 
+                                       int& internalCounter,
+                                       int targetChannels);
+    /** 
+    Adds the function invocation to the pixel shader which will modify
+    the blend sources according to the source modification parameters.
+    */
+    void addPSModifierInvocation(Function* psMain, 
+                                 int samplerIndex, 
+                                 ParameterPtr arg1,
+                                 ParameterPtr arg2,
+                                 const int groupOrder, 
+                                 int& internalCounter,
+                                 int targetChannels);
 
-	// Attributes.
+    // Attributes.
 protected:
-	vector<TextureBlend>::type mTextureBlends;
+    vector<TextureBlend>::type mTextureBlends;
 
 };
 
@@ -219,7 +220,7 @@ public:
 	*/
 	virtual void writeInstance(MaterialSerializer* ser, SubRenderState* subRenderState, const TextureUnitState* srcTextureUnit, const TextureUnitState* dstTextureUnit);
 
-	
+    
 protected:
 
 	/** 
@@ -249,13 +250,13 @@ protected:
 	/** 
 	Returns the LayeredBlending sub-rener state previously created for this material/pass.
 	if no such sub-render state exists creates a new one
-	@param trscript compiler
+	@param translator compiler
 	*/
 	LayeredBlending* createOrRetrieveSubRenderState(SGScriptTranslator* translator);
 };
 
-}
-}
+} // namespace RTShader
+} // namespace Ogre
 
-#endif
-#endif
+#endif // RTSHADER_SYSTEM_BUILD_EXT_SHADERS
+#endif // _OgreShaderExLayeredBlending_

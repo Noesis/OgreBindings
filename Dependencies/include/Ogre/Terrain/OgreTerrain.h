@@ -4,7 +4,7 @@ This source file is part of OGRE
 (Object-oriented Graphics Rendering Engine)
 For the latest info, see http://www.ogre3d.org/
 
-Copyright (c) 2000-2012 Torus Knot Software Ltd
+Copyright (c) 2000-2013 Torus Knot Software Ltd
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -37,6 +37,7 @@ THE SOFTWARE.
 #include "OgreTerrainMaterialGenerator.h"
 #include "OgreTerrainLayerBlendMap.h"
 #include "OgreWorkQueue.h"
+#include "OgreTerrainLodManager.h"
 
 namespace Ogre
 {
@@ -262,6 +263,8 @@ namespace Ogre
 		public WorkQueue::RequestHandler, public WorkQueue::ResponseHandler, public TerrainAlloc
 	{
 	public:
+		friend class TerrainLodManager;
+
 		/** Constructor.
 		@param sm The SceneManager to use.
 		*/
@@ -271,6 +274,7 @@ namespace Ogre
 		static const uint32 TERRAIN_CHUNK_ID;
 		static const uint16 TERRAIN_CHUNK_VERSION;
 		static const uint16 TERRAIN_MAX_BATCH_SIZE;
+		static const uint64 TERRAIN_GENERATE_MATERIAL_INTERVAL_MS;
 
 		static const uint32 TERRAINLAYERDECLARATION_CHUNK_ID;
 		static const uint16 TERRAINLAYERDECLARATION_CHUNK_VERSION;
@@ -282,6 +286,8 @@ namespace Ogre
 		static const uint16 TERRAINLAYERINSTANCE_CHUNK_VERSION;
 		static const uint32 TERRAINDERIVEDDATA_CHUNK_ID;
 		static const uint16 TERRAINDERIVEDDATA_CHUNK_VERSION;
+		static const uint32 TERRAINGENERALINFO_CHUNK_ID;
+		static const uint16 TERRAINGENERALINFO_CHUNK_VERSION;
 
 		static const size_t LOD_MORPH_CUSTOM_PARAM;
 
@@ -567,7 +573,7 @@ namespace Ogre
 		{
 		public:
 			DefaultGpuBufferAllocator();
-			~DefaultGpuBufferAllocator();
+			virtual ~DefaultGpuBufferAllocator();
 			void allocateVertexBuffers(Terrain* forTerrain, size_t numVertices, HardwareVertexBufferSharedPtr& destPos, HardwareVertexBufferSharedPtr& destDelta);
 			void freeVertexBuffers(const HardwareVertexBufferSharedPtr& posbuf, const HardwareVertexBufferSharedPtr& deltabuf);
 			HardwareIndexBufferSharedPtr getSharedIndexBuffer(uint16 batchSize, 
@@ -698,6 +704,13 @@ namespace Ogre
 			It reads data from a native terrain data chunk. 
 		@return true if the preparation was successful
 		*/
+		bool prepare(DataStreamPtr& stream);
+		/** Prepare terrain data from saved data.
+		@remarks
+			This is safe to do in a background thread as it creates no GPU resources.
+			It reads data from a native terrain data chunk. 
+		@return true if the preparation was successful
+		*/
 		bool prepare(StreamSerialiser& stream);
 
 		/** Prepare the terrain from some import data rather than loading from 
@@ -724,8 +737,10 @@ namespace Ogre
 		/** Load the terrain based on the data already populated via prepare methods. 
 		@remarks
 			This method must be called in the main render thread. 
+		@param lodLevel Load the specified LOD level
+		@param synchronous Load type
 		*/
-		void load();
+		void load(int lodLevel = 0, bool synchronous = true);
 
 		/** Return whether the terrain is loaded. 
 		@remarks
@@ -793,21 +808,21 @@ namespace Ogre
 		/** Get the height data for a given terrain position. 
 		@param x, y Position in terrain space, values from 0 to 1 left/right bottom/top
 		*/
-		float getHeightAtTerrainPosition(Real x, Real y);
+		float getHeightAtTerrainPosition(Real x, Real y) const;
 
 		/** Get the height data for a given world position (projecting the point
 			down on to the terrain). 
 		@param x, y,z Position in world space. Positions will be clamped to the edge
 			of the terrain
 		*/
-		float getHeightAtWorldPosition(Real x, Real y, Real z);
+		float getHeightAtWorldPosition(Real x, Real y, Real z) const;
 
 		/** Get the height data for a given world position (projecting the point
 		down on to the terrain). 
 		@param pos Position in world space. Positions will be clamped to the edge
 		of the terrain
 		*/
-		float getHeightAtWorldPosition(const Vector3& pos);
+		float getHeightAtWorldPosition(const Vector3& pos) const;
 
 		/** Get a pointer to all the delta data for this terrain.
 		@remarks
@@ -815,30 +830,30 @@ namespace Ogre
 			a vertex will have to move to reach the point at which it will be
 			removed in the next lower LOD.
 		*/
-		const float* getDeltaData();
+		const float* getDeltaData() const;
 
 		/** Get a pointer to the delta data for a given point. 
 		*/
-		const float* getDeltaData(long x, long y);
+		const float* getDeltaData(long x, long y) const;
 
 		/** Get a Vector3 of the world-space point on the terrain, aligned as per
 			options.
 		@note This point is relative to Terrain::getPosition
 		*/
-		void getPoint(long x, long y, Vector3* outpos);
+		void getPoint(long x, long y, Vector3* outpos) const;
 
 		/** Get a Vector3 of the world-space point on the terrain, aligned as per
 		options. Cascades into neighbours if out of bounds.
 		@note This point is relative to Terrain::getPosition - neighbours are
 			adjusted to be relative to this tile
 		*/
-		void getPointFromSelfOrNeighbour(long x, long y, Vector3* outpos);
+		void getPointFromSelfOrNeighbour(long x, long y, Vector3* outpos) const;
 
 		/** Get a Vector3 of the world-space point on the terrain, supplying the
 			height data manually (can be more optimal). 
 		@note This point is relative to Terrain::getPosition
 		*/
-		void getPoint(long x, long y, float height, Vector3* outpos);
+		void getPoint(long x, long y, float height, Vector3* outpos) const;
 		/** Get a transform which converts Vector4(xindex, yindex, height, 1) into 
 			an object-space position including scalings and alignment.
 		*/
@@ -847,45 +862,45 @@ namespace Ogre
 		@param inVec The vector in basis space, where x/y represents the 
 		terrain plane and z represents the up vector
 		*/
-		void getTerrainVector(const Vector3& inVec, Vector3* outVec);
+		void getTerrainVector(const Vector3& inVec, Vector3* outVec) const;
 		/** Translate a vector from world space to local terrain space based on a specified alignment.
 		@param inVec The vector in basis space, where x/y represents the 
 		terrain plane and z represents the up vector
 		*/
-		void getTerrainVectorAlign(const Vector3& inVec, Alignment align, Vector3* outVec);
+		void getTerrainVectorAlign(const Vector3& inVec, Alignment align, Vector3* outVec) const;
 
 		/** Translate a vector from world space to local terrain space based on the alignment options.
 		@param x, y, z The vector in basis space, where x/y represents the 
 		terrain plane and z represents the up vector
 		*/
-		void getTerrainVector(Real x, Real y, Real z, Vector3* outVec);
+		void getTerrainVector(Real x, Real y, Real z, Vector3* outVec) const;
 		/** Translate a vector from world space to local terrain space based on a specified alignment.
 		@param x, y, z The vector in world space, where x/y represents the 
 		terrain plane and z represents the up vector
 		*/
-		void getTerrainVectorAlign(Real x, Real y, Real z, Alignment align, Vector3* outVec);
+		void getTerrainVectorAlign(Real x, Real y, Real z, Alignment align, Vector3* outVec) const;
 
 		/** Translate a vector into world space based on the alignment options.
 		@param inVec The vector in basis space, where x/y represents the 
 		terrain plane and z represents the up vector
 		*/
-		void getVector(const Vector3& inVec, Vector3* outVec);
+		void getVector(const Vector3& inVec, Vector3* outVec) const;
 		/** Translate a vector into world space based on a specified alignment.
 		@param inVec The vector in basis space, where x/y represents the 
 		terrain plane and z represents the up vector
 		*/
-		void getVectorAlign(const Vector3& inVec, Alignment align, Vector3* outVec);
+		void getVectorAlign(const Vector3& inVec, Alignment align, Vector3* outVec) const;
 
 		/** Translate a vector into world space based on the alignment options.
 		@param x, y, z The vector in basis space, where x/y represents the 
 		terrain plane and z represents the up vector
 		*/
-		void getVector(Real x, Real y, Real z, Vector3* outVec);
+		void getVector(Real x, Real y, Real z, Vector3* outVec) const;
 		/** Translate a vector into world space based on a specified alignment.
 		@param x, y, z The vector in basis space, where x/y represents the 
 		terrain plane and z represents the up vector
 		*/
-		void getVectorAlign(Real x, Real y, Real z, Alignment align, Vector3* outVec);
+		void getVectorAlign(Real x, Real y, Real z, Alignment align, Vector3* outVec) const;
 
 
 		/** Convert a position from terrain basis space to world space. 
@@ -895,7 +910,7 @@ namespace Ogre
 		@note This position is relative to Terrain::getPosition
 		@param outWSpos World space output position (setup according to current alignment). 
 		*/
-		void getPosition(const Vector3& TSpos, Vector3* outWSpos);
+		void getPosition(const Vector3& TSpos, Vector3* outWSpos) const;
 		/** Convert a position from terrain basis space to world space. 
 		@param x,y,z Terrain space position, where (0,0) is the bottom-left of the
 		terrain, and (1,1) is the top-right. The Z coordinate is in absolute
@@ -903,7 +918,7 @@ namespace Ogre
 		@note This position is relative to Terrain::getPosition
 		@param outWSpos World space output position (setup according to current alignment). 
 		*/
-		void getPosition(Real x, Real y, Real z, Vector3* outWSpos);
+		void getPosition(Real x, Real y, Real z, Vector3* outWSpos) const;
 
 		/** Convert a position from world space to terrain basis space. 
 		@param WSpos World space position (setup according to current alignment). 
@@ -911,28 +926,28 @@ namespace Ogre
 		terrain, and (1,1) is the top-right. The Z coordinate is in absolute
 		height units.
 		*/
-		void getTerrainPosition(const Vector3& WSpos, Vector3* outTSpos);
+		void getTerrainPosition(const Vector3& WSpos, Vector3* outTSpos) const;
 		/** Convert a position from world space to terrain basis space. 
 		@param x,y,z World space position (setup according to current alignment). 
 		@param outTSpos Terrain space output position, where (0,0) is the bottom-left of the
 		terrain, and (1,1) is the top-right. The Z coordinate is in absolute
 		height units.
 		*/
-		void getTerrainPosition(Real x, Real y, Real z, Vector3* outTSpos);
+		void getTerrainPosition(Real x, Real y, Real z, Vector3* outTSpos) const;
 		/** Convert a position from terrain basis space to world space based on a specified alignment. 
 		@param TSpos Terrain space position, where (0,0) is the bottom-left of the
 			terrain, and (1,1) is the top-right. The Z coordinate is in absolute
 			height units.
 		@param outWSpos World space output position (setup according to alignment). 
 		*/
-		void getPositionAlign(const Vector3& TSpos, Alignment align, Vector3* outWSpos);
+		void getPositionAlign(const Vector3& TSpos, Alignment align, Vector3* outWSpos) const;
 		/** Convert a position from terrain basis space to world space based on a specified alignment. 
 		@param x,y,z Terrain space position, where (0,0) is the bottom-left of the
 		terrain, and (1,1) is the top-right. The Z coordinate is in absolute
 		height units.
 		@param outWSpos World space output position (setup according to alignment). 
 		*/
-		void getPositionAlign(Real x, Real y, Real z, Alignment align, Vector3* outWSpos);
+		void getPositionAlign(Real x, Real y, Real z, Alignment align, Vector3* outWSpos) const;
 
 		/** Convert a position from world space to terrain basis space based on a specified alignment. 
 		@param WSpos World space position (setup according to alignment). 
@@ -940,14 +955,14 @@ namespace Ogre
 		terrain, and (1,1) is the top-right. The Z coordinate is in absolute
 		height units.
 		*/
-		void getTerrainPositionAlign(const Vector3& WSpos, Alignment align, Vector3* outTSpos);
+		void getTerrainPositionAlign(const Vector3& WSpos, Alignment align, Vector3* outTSpos) const;
 		/** Convert a position from world space to terrain basis space based on a specified alignment. 
 		@param x,y,z World space position (setup according to alignment). 
 		@param outTSpos Terrain space output position, where (0,0) is the bottom-left of the
 		terrain, and (1,1) is the top-right. The Z coordinate is in absolute
 		height units.
 		*/
-		void getTerrainPositionAlign(Real x, Real y, Real z, Alignment align, Vector3* outTSpos);
+		void getTerrainPositionAlign(Real x, Real y, Real z, Alignment align, Vector3* outTSpos) const;
 
 
 		/// Get the alignment of the terrain
@@ -1043,8 +1058,8 @@ namespace Ogre
 		const String& getLayerTextureName(uint8 layerIndex, uint8 samplerIndex) const;
 		/** Set the name of the texture bound to a given index within a given layer.
 		See the LayerDeclaration for a list of sampelrs within a layer.
-		@param index The layer index.
-		@param size The world size of the texture before repeating
+		@param layerIndex The layer index.
+    	@param samplerIndex The sampler index within a layer
 		@param textureName The name of the texture to use
 		*/
 		void setLayerTextureName(uint8 layerIndex, uint8 samplerIndex, const String& textureName);
@@ -1161,6 +1176,12 @@ namespace Ogre
 			Terrain geometry will be updated when this method returns.
 		*/
 		void updateGeometry();
+		/** Performs an update on the terrain geometry based on the dirty region.
+		@remarks
+			Terrain geometry will be updated when this method returns, and no
+			neighbours will be notified.
+		*/
+		void updateGeometryWithoutNotifyNeighbours();
 
 		// Used as a type mask for updateDerivedData
 		static const uint8 DERIVED_DATA_DELTAS;
@@ -1266,14 +1287,14 @@ namespace Ogre
 		it safe to perform in a background thread. This call promotes those
 		calculations to the runtime values, and must be called in the main thread.
 		@param rect Rectangle describing the area to finalise 
-		@param normalsBox Pointer to a PixelBox full of normals
+		@param lightmapBox Pointer to a PixelBox full of normals
 		*/
 		void finaliseLightmap(const Rect& rect, PixelBox* lightmapBox);
 
 		/** Gets the resolution of the entire terrain (down one edge) at a 
 			given LOD level. 
 		*/
-		uint16 getResolutionAtLod(uint16 lodLevel);
+		uint16 getResolutionAtLod(uint16 lodLevel) const;
 
 		/** Test for intersection of a given ray with the terrain. If the ray hits
 		 the terrain, the point of intersection is returned.
@@ -1402,7 +1423,7 @@ namespace Ogre
 		/** Widen a rectangular area of terrain to take into account an extrusion vector.
 		@param vec A vector in world space
 		@param inRect Input rectangle
-		@param inRect Output rectangle
+		@param outRect Output rectangle
 		*/
 		void widenRectByVector(const Vector3& vec, const Rect& inRect, Rect& outRect);
 
@@ -1411,7 +1432,7 @@ namespace Ogre
 		@param vec A vector in world space
 		@param inRect Input rectangle
 		@param minHeight, maxHeight The extents of the height to extrude
-		@param inRect Output rectangle
+		@param outRect Output rectangle
 		*/
 		void widenRectByVector(const Vector3& vec, const Rect& inRect, 
 			Real minHeight, Real maxHeight, Rect& outRect);
@@ -1431,7 +1452,7 @@ namespace Ogre
 		@param index The blend texture index (note: not layer index; derive
 		the texture index from getLayerBlendTextureIndex)
 		*/
-		const TexturePtr& getLayerBlendTexture(uint8 index);
+		const TexturePtr& getLayerBlendTexture(uint8 index) const;
 
 		/** Get the texture index and colour channel of the blend information for 
 			a given layer. 
@@ -1439,7 +1460,7 @@ namespace Ogre
 		@return A pair in which the first value is the texture index, and the 
 			second value is the colour channel (RGBA)
 		*/
-		std::pair<uint8,uint8> getLayerBlendTextureIndex(uint8 layerIndex);
+		std::pair<uint8,uint8> getLayerBlendTextureIndex(uint8 layerIndex) const;
 
 		/** Request internal implementation options for the terrain material to use, 
 			in this case vertex morphing information. 
@@ -1514,14 +1535,16 @@ namespace Ogre
 		bool canHandleResponse(const WorkQueue::Response* res, const WorkQueue* srcQ);
 		/// WorkQueue::ResponseHandler override
 		void handleResponse(const WorkQueue::Response* res, const WorkQueue* srcQ);
+		/// Handler for GenerateMaterial
+		void handleGenerateMaterialResponse(const WorkQueue::Response* res, const WorkQueue* srcQ);
 
 		static const uint16 WORKQUEUE_DERIVED_DATA_REQUEST;
-
+		static const uint16 WORKQUEUE_GENERATE_MATERIAL_REQUEST;
 
 		/// Utility method, get the first LOD Level at which this vertex is no longer included
-		uint16 getLODLevelWhenVertexEliminated(long x, long y);
+		uint16 getLODLevelWhenVertexEliminated(long x, long y) const;
 		/// Utility method, get the first LOD Level at which this vertex is no longer included
-		uint16 getLODLevelWhenVertexEliminated(long rowOrColulmn);
+		uint16 getLODLevelWhenVertexEliminated(long rowOrColulmn) const;
 
 
 		/// Get the top level of the quad tree which is used to divide up the terrain
@@ -1537,7 +1560,7 @@ namespace Ogre
 			tile must be able to be independent.
 		@param index The index of the neighbour
 		*/
-		Terrain* getNeighbour(NeighbourIndex index);
+		Terrain* getNeighbour(NeighbourIndex index) const;
 
 		/** Set a terrain's neighbour, or null to detach one. 
 		@remarks
@@ -1616,7 +1639,26 @@ namespace Ogre
 		static void writeLayerInstanceList(const Terrain::LayerInstanceList& lst, StreamSerialiser& ser);
 		/// Utility method to read a layer instance list from a stream
 		static bool readLayerInstanceList(StreamSerialiser& ser, size_t numSamplers, Terrain::LayerInstanceList& targetlst);
+
+		// This mutex is write-locked by neighbours if they are in the process of deleting themselves.
+		// It should be read-locked whenever using neighbours in calculations which are possibly running in a
+		// background thread.
+		OGRE_RW_MUTEX(mNeighbourMutex);
+
 	protected:
+		/** Gets the data size at a given LOD level.
+		*/
+		uint getGeoDataSizeAtLod(uint16 lodLevel) const;
+        /** Get the real lod level
+         @param lodLevel LOD level which can be negative.
+         @note After mapping, [-mNumLodLevels, -1] equals to [0,mNumLodLevels-1]
+         So you can reference the lowest LOD with -1
+         */
+        inline int getPositiveLodLevel( int lodLevel ) const
+        {
+        	return (lodLevel>=0) ? lodLevel : mNumLodLevels+lodLevel;
+        }
+		void freeLodData();
 
 		void freeCPUResources();
 		void freeGPUResources();
@@ -1636,12 +1678,12 @@ namespace Ogre
 		/** Get a Vector3 of the world-space point on the terrain, aligned Y-up always.
 		@note This point is relative to Terrain::getPosition
 		*/
-		void getPointAlign(long x, long y, Alignment align, Vector3* outpos);
+		void getPointAlign(long x, long y, Alignment align, Vector3* outpos) const;
 		/** Get a Vector3 of the world-space point on the terrain, supplying the
 		height data manually (can be more optimal). 
 		@note This point is relative to Terrain::getPosition
 		*/
-		void getPointAlign(long x, long y, float height, Alignment align, Vector3* outpos);
+		void getPointAlign(long x, long y, float height, Alignment align, Vector3* outpos) const;
 		void calculateCurrentLod(Viewport* vp);
 		/// Test a single quad of the terrain for ray intersection.
 		std::pair<bool, Vector3> checkQuadIntersection(int x, int y, const Ray& ray); //const;
@@ -1661,19 +1703,20 @@ namespace Ogre
 		void checkLayers(bool includeGPUResources);
 		void checkDeclaration();
 		void deriveUVMultipliers();
-		PixelFormat getBlendTextureFormat(uint8 textureIndex, uint8 numLayers);
+		PixelFormat getBlendTextureFormat(uint8 textureIndex, uint8 numLayers) const;
 
 		void updateDerivedDataImpl(const Rect& rect, const Rect& lightmapExtraRect, bool synchronous, uint8 typeMask);
 
-		void getEdgeRect(NeighbourIndex index, long range, Rect* outRect);
+		void getEdgeRect(NeighbourIndex index, long range, Rect* outRect) const;
 		// get the equivalent of the passed in edge rectangle in neighbour
-		void getNeighbourEdgeRect(NeighbourIndex index, const Rect& inRect, Rect* outRect);
+		void getNeighbourEdgeRect(NeighbourIndex index, const Rect& inRect, Rect* outRect) const;
 		// get the equivalent of the passed in edge point in neighbour
-		void getNeighbourPoint(NeighbourIndex index, long x, long y, long *outx, long *outy);
+		void getNeighbourPoint(NeighbourIndex index, long x, long y, long *outx, long *outy) const;
 		// overflow a point into a neighbour index and point
-		void getNeighbourPointOverflow(long x, long y, NeighbourIndex *outindex, long *outx, long *outy);
+		void getNeighbourPointOverflow(long x, long y, NeighbourIndex *outindex, long *outx, long *outy) const;
 
-		
+		/// Removes this terrain instance from neighbouring terrain's list of neighbours.
+		void removeFromNeighbours();
 
 		uint16 mWorkQueueChannel;
 		SceneManager* mSceneMgr;
@@ -1715,8 +1758,12 @@ namespace Ogre
 		Rect mDirtyGeometryRectForNeighbours;
 		Rect mDirtyLightmapFromNeighboursRect;
 		bool mDerivedDataUpdateInProgress;
-		uint8 mDerivedUpdatePendingMask; // if another update is requested while one is already running
+        /// If another update is requested while one is already running
+		uint8 mDerivedUpdatePendingMask;
 
+		bool mGenerateMaterialInProgress;
+		/// Don't release Height/DeltaData when preparing
+		mutable bool mPrepareInProgress;
 		/// A data holder for communicating with the background derived data update
 		struct DerivedDataRequest
 		{
@@ -1733,18 +1780,33 @@ namespace Ogre
 		struct DerivedDataResponse
 		{
 			Terrain* terrain;
-			// remaining types not yet processed
+			/// Remaining types not yet processed
 			uint8 remainingTypeMask;
-			// The area of deltas that was updated
+			/// The area of deltas that was updated
 			Rect deltaUpdateRect;
-			// the area of normals that was updated
+			/// The area of normals that was updated
 			Rect normalUpdateRect;
-			// the area of lightmap that was updated
+			/// The area of lightmap that was updated
 			Rect lightmapUpdateRect;
-			// all CPU-side data, independent of textures; to be blitted in main thread
+			/// All CPU-side data, independent of textures; to be blitted in main thread
 			PixelBox* normalMapBox;
 			PixelBox* lightMapBox;
 			_OgreTerrainExport friend std::ostream& operator<<(std::ostream& o, const DerivedDataResponse& r)
+			{ return o; }		
+		};
+
+		enum GenerateMaterialStage{
+			GEN_MATERIAL,
+			GEN_COMPOSITE_MAP_MATERIAL
+		};
+		/// A data holder for communicating with the background GetMaterial
+		struct GenerateMaterialRequest
+		{
+			Terrain* terrain;
+			unsigned long startTime;
+			GenerateMaterialStage stage;
+			bool synchronous;
+			_OgreTerrainExport friend std::ostream& operator<<(std::ostream& o, const GenerateMaterialRequest& r)
 			{ return o; }		
 		};
 
@@ -1781,7 +1843,7 @@ namespace Ogre
 		Rect mCompositeMapDirtyRect;
 		unsigned long mCompositeMapUpdateCountdown;
 		unsigned long mLastMillis;
-		/// true if the updates included lightmap changes (widen)
+		/// True if the updates included lightmap changes (widen)
 		bool mCompositeMapDirtyRectLightmapUpdate;
 		mutable MaterialPtr mCompositeMapMaterial;
 
@@ -1814,6 +1876,21 @@ namespace Ogre
 		size_t getPositionBufVertexSize() const;
 		size_t getDeltaBufVertexSize() const;
 
+		TerrainLodManager* mLodManager;
+
+	public:
+		/** Increase Terrain's LOD level by 1
+		  @param synchronous Run synchronously
+		  */
+		void increaseLodLevel(bool synchronous = false);
+		/** Removes highest LOD level loaded
+		  @remarks If there is LOD level load in progress it's load is canceled instead of removal of already loaded one.
+		  */
+		void decreaseLodLevel();
+
+		int getHighestLodPrepared() const { return (mLodManager) ? mLodManager->getHighestLodPrepared() : -1; };
+		int getHighestLodLoaded() const { return (mLodManager) ? mLodManager->getHighestLodLoaded() : -1; };
+		int getTargetLodLevel() const { return (mLodManager) ? mLodManager->getTargetLodLevel() : -1; };
 	};
 
 
@@ -1858,7 +1935,7 @@ namespace Ogre
 		/** The default size of 'skirts' used to hide terrain cracks
 		(default 10)
 		*/
-		Real getSkirtSize() { return mSkirtSize; }
+		Real getSkirtSize() const { return mSkirtSize; }
 		/** method - the default size of 'skirts' used to hide terrain cracks
 		(default 10)
 		@remarks
@@ -1866,19 +1943,19 @@ namespace Ogre
 		*/
 		void setSkirtSize(Real skirtSz) { mSkirtSize = skirtSz; }
 		/// Get the shadow map light direction to use (world space)
-		const Vector3& getLightMapDirection() { return mLightMapDir; }
+		const Vector3& getLightMapDirection() const { return mLightMapDir; }
 		/** Set the shadow map light direction to use (world space). */
 		void setLightMapDirection(const Vector3& v) { mLightMapDir = v; }
 		/// Get the composite map ambient light to use 
-		const ColourValue& getCompositeMapAmbient() { return mCompositeMapAmbient; }
+		const ColourValue& getCompositeMapAmbient() const { return mCompositeMapAmbient; }
 		/// Set the composite map ambient light to use 
 		void setCompositeMapAmbient(const ColourValue& c) { mCompositeMapAmbient = c; }
 		/// Get the composite map iffuse light to use 
-		const ColourValue& getCompositeMapDiffuse() { return mCompositeMapDiffuse; }
+		const ColourValue& getCompositeMapDiffuse() const { return mCompositeMapDiffuse; }
 		/// Set the composite map diffuse light to use 
 		void setCompositeMapDiffuse(const ColourValue& c) { mCompositeMapDiffuse = c; }
 		/// Get the distance at which to start using a composite map if present
-		Real getCompositeMapDistance() { return mCompositeMapDistance; }
+		Real getCompositeMapDistance() const { return mCompositeMapDistance; }
 		/// Set the distance at which to start using a composite map if present
 		void setCompositeMapDistance(Real c) { mCompositeMapDistance = c; }
 
@@ -1886,7 +1963,7 @@ namespace Ogre
 		/** Whether the terrain will be able to cast shadows (texture shadows
 		only are supported, and you must be using depth shadow maps).
 		*/
-		bool getCastsDynamicShadows() { return mCastsShadows; }
+		bool getCastsDynamicShadows() const { return mCastsShadows; }
 
 		/** Whether the terrain will be able to cast shadows (texture shadows
 		only are supported, and you must be using depth shadow maps).
@@ -1896,7 +1973,7 @@ namespace Ogre
 		void setCastsDynamicShadows(bool s) { mCastsShadows = s; }
 
 		/** Get the maximum screen pixel error that should be allowed when rendering. */
-		Real getMaxPixelError() { return mMaxPixelError; }
+		Real getMaxPixelError() const { return mMaxPixelError; }
 
 		/** Set the maximum screen pixel error that should  be allowed when rendering. 
 		@note
@@ -1906,7 +1983,7 @@ namespace Ogre
 		void setMaxPixelError(Real pixerr) { mMaxPixelError = pixerr; }
 
 		/// Get the render queue group that this terrain will be rendered into
-		uint8 getRenderQueueGroup(void) { return mRenderQueueGroup; }
+		uint8 getRenderQueueGroup(void) const { return mRenderQueueGroup; }
 		/** Set the render queue group that terrains will be rendered into.
 		@remarks This applies to newly created terrains, after which they will
 			maintain their own queue group settings
@@ -1914,7 +1991,7 @@ namespace Ogre
 		void setRenderQueueGroup(uint8 grp) { mRenderQueueGroup = grp; }
 
 		/// Get the visbility flags that terrains will be rendered with
-		uint32 getVisibilityFlags(void) { return mVisibilityFlags; }
+		uint32 getVisibilityFlags(void) const { return mVisibilityFlags; }
 		/** Set the visbility flags that terrains will be rendered with
 		@remarks This applies to newly created terrains, after which they will
 		maintain their own settings
@@ -1928,7 +2005,7 @@ namespace Ogre
 		void  setQueryFlags(uint32 flags) { mQueryFlags = flags; }
 		/** Get the default query flags for terrains.
 		*/
-		uint32 getQueryFlags(void) { return mQueryFlags; }
+		uint32 getQueryFlags(void) const { return mQueryFlags; }
 
 		/** As setQueryFlags, except the flags passed as parameters are appended to the existing flags on this object. */
 		void addQueryFlags(uint32 flags) { mQueryFlags |= flags; }
@@ -1940,7 +2017,7 @@ namespace Ogre
 			from a terrain tile (ray / AABB intersection) or whether to use the
 			simpler distance from the tile centre. 
 		*/
-		bool getUseRayBoxDistanceCalculation() { return mUseRayBoxDistanceCalculation; }
+		bool getUseRayBoxDistanceCalculation() const { return mUseRayBoxDistanceCalculation; }
 
 		/** Sets whether to use an accurate ray / box intersection to determine
 			distance from a terrain tile, or whether to use the simple distance
@@ -1965,7 +2042,7 @@ namespace Ogre
 
 		/** Get the default size of the blend maps for a new terrain. 
 		*/
-		uint16 getLayerBlendMapSize() { return mLayerBlendMapSize; }
+		uint16 getLayerBlendMapSize() const { return mLayerBlendMapSize; }
 
 		/** Sets the default size of blend maps for a new terrain.
 		This is the resolution of each blending layer for a new terrain. 
@@ -1975,7 +2052,7 @@ namespace Ogre
 
 		/** Get the default world size for a layer 'splat' texture to cover. 
 		*/
-		Real getDefaultLayerTextureWorldSize() { return mDefaultLayerTextureWorldSize; }
+		Real getDefaultLayerTextureWorldSize() const { return mDefaultLayerTextureWorldSize; }
 
 		/** Set the default world size for a layer 'splat' texture to cover. 
 		*/
@@ -1983,7 +2060,7 @@ namespace Ogre
 
 		/** Get the default size of the terrain global colour map for a new terrain. 
 		*/
-		uint16 getDefaultGlobalColourMapSize() { return mDefaultGlobalColourMapSize; }
+		uint16 getDefaultGlobalColourMapSize() const { return mDefaultGlobalColourMapSize; }
 
 		/** Set the default size of the terrain global colour map for a new terrain. 
 		Once created, this information will be stored with the terrain. 
@@ -1993,7 +2070,7 @@ namespace Ogre
 
 		/** Get the default size of the lightmaps for a new terrain. 
 		*/
-		uint16 getLightMapSize() { return mLightmapSize; }
+		uint16 getLightMapSize() const { return mLightmapSize; }
 
 		/** Sets the default size of lightmaps for a new terrain.
 		*/
@@ -2001,7 +2078,7 @@ namespace Ogre
 
 		/** Get the default size of the composite maps for a new terrain. 
 		*/
-		uint16 getCompositeMapSize() { return mCompositeMapSize; }
+		uint16 getCompositeMapSize() const { return mCompositeMapSize; }
 
 		/** Sets the default size of composite maps for a new terrain.
 		*/
@@ -2013,7 +2090,7 @@ namespace Ogre
 
 		/** Get the default resource group to use to load / save terrains.
 		*/
-		const String& getDefaultResourceGroup() { return mResourceGroup; }
+		const String& getDefaultResourceGroup() const { return mResourceGroup; }
 		
 		/** Get whether to allow vertex compression to be used when the material
 			generator states that it supports it.

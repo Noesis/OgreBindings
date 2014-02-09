@@ -8,8 +8,9 @@
 #include "Ogre.h"
 #include "OIS.h"
 #include "TicTacToeLogic.h"
+#include <NsCore/Ptr.h>
 
-class Sample : public OIS::KeyListener, public OIS::MouseListener
+class Sample : public OIS::KeyListener, public OIS::MouseListener, public Ogre::FrameListener
 {
 public:
 	Sample();
@@ -18,6 +19,7 @@ public:
 	void setupEngine();
 	void setupScene();
 	void startMainLoop();
+    void Close();
 
 private:
 	Ogre::Root* mRoot;
@@ -39,8 +41,11 @@ private:
 	bool mousePressed(const OIS::MouseEvent &e, OIS::MouseButtonID id);
 	bool mouseReleased(const OIS::MouseEvent &e, OIS::MouseButtonID id);
 
+    bool frameStarted(const Ogre::FrameEvent& e);
+    bool frameRenderingQueued(const Ogre::FrameEvent& e);
+
 	// NsGui
-	TicTacToeLogic* mTicTac;
+	Noesis::Core::Ptr<TicTacToeLogic> mTicTac;
 
 	void* mUIRoot;
 	void* mUIRenderer;

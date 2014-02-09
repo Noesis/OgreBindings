@@ -4,7 +4,7 @@ This source file is a part of OGRE
 
 For the latest info, see http://www.ogre3d.org/
 
-Copyright (c) 2000-2012 Torus Knot Software Ltd
+Copyright (c) 2000-2013 Torus Knot Software Ltd
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
@@ -55,6 +55,9 @@ Torus Knot Software Ltd.
 #include "OgreLodListener.h"
 #include "OgreInstanceManager.h"
 #include "OgreRenderSystem.h"
+#include "OgreHeaderPrefix.h"
+#include "OgreNameGenerator.h"
+
 namespace Ogre {
 	/** \addtogroup Core
 	*  @{
@@ -507,11 +510,11 @@ namespace Ogre {
         /// Cached light information, used to tracking light's changes
         struct _OgreExport LightInfo
         {
-            Light* light;       // Just a pointer for comparison, the light might destroyed for some reason
-            int type;           // Use int instead of Light::LightTypes to avoid header file dependence
-            Real range;         // Sets to zero if directional light
-            Vector3 position;   // Sets to zero if directional light
-			uint32 lightMask;   // Light mask
+            Light* light;       /// Just a pointer for comparison, the light might destroyed for some reason
+            int type;           /// Use int instead of Light::LightTypes to avoid header file dependence
+            Real range;         /// Sets to zero if directional light
+            Vector3 position;   /// Sets to zero if directional light
+			uint32 lightMask;   /// Light mask
 
             bool operator== (const LightInfo& rhs) const
             {
@@ -537,8 +540,8 @@ namespace Ogre {
 		/// Simple structure to hold MovableObject map and a mutex to go with it.
 		struct MovableObjectCollection
 		{
-			MovableObjectMap map;
-			OGRE_MUTEX(mutex)
+                    MovableObjectMap map;
+                    OGRE_MUTEX(mutex);
 		};
 		typedef map<String, MovableObjectCollection*>::type MovableObjectCollectionMap;
 		MovableObjectCollectionMap mMovableObjectCollectionMap;
@@ -554,7 +557,7 @@ namespace Ogre {
 		*/
 		const MovableObjectCollection* getMovableObjectCollection(const String& typeName) const;
 		/// Mutex over the collection of MovableObject types
-		OGRE_MUTEX(mMovableObjectCollectionMapMutex)
+		OGRE_MUTEX(mMovableObjectCollectionMapMutex);
 
         /** Internal method for initialising the render queue.
         @remarks
@@ -628,13 +631,13 @@ namespace Ogre {
             int xsegments, int ysegments, int ySegmentsToKeep, 
             const String& groupName);
 
-        // Flag indicating whether SceneNodes will be rendered as a set of 3 axes
+        /// Flag indicating whether SceneNodes will be rendered as a set of 3 axes
         bool mDisplayNodes;
 
         /// Storage of animations, lookup by name
         typedef map<String, Animation*>::type AnimationList;
         AnimationList mAnimationsList;
-		OGRE_MUTEX(mAnimationsListMutex)
+        OGRE_MUTEX(mAnimationsListMutex);
         AnimationStateSet mAnimationStates;
 
 
@@ -734,6 +737,7 @@ namespace Ogre {
 		bool mShadowMaterialInitDone;
         HardwareIndexBufferSharedPtr mShadowIndexBuffer;
 		size_t mShadowIndexBufferSize;
+		size_t mShadowIndexBufferUsedSize;
         Rectangle2D* mFullScreenQuad;
         Real mShadowDirLightExtrudeDist;
         IlluminationRenderStage mIlluminationStage;
@@ -747,7 +751,7 @@ namespace Ogre {
 		bool mShadowUseInfiniteFarPlane;
 		bool mShadowCasterRenderBackFaces;
 		bool mShadowAdditiveLightClip;
-		/// Struct for cacheing light clipping information for re-use in a frame
+		/// Struct for caching light clipping information for re-use in a frame
 		struct LightClippingInfo
 		{
 			RealRect scissorRect;
@@ -850,9 +854,9 @@ namespace Ogre {
         AxisAlignedBoxSceneQuery* mShadowCasterAABBQuery;
         Real mDefaultShadowFarDist;
         Real mDefaultShadowFarDistSquared;
-        Real mShadowTextureOffset; // proportion of texture offset in view direction e.g. 0.4
-        Real mShadowTextureFadeStart; // as a proportion e.g. 0.6
-        Real mShadowTextureFadeEnd; // as a proportion e.g. 0.9
+        Real mShadowTextureOffset; /// Proportion of texture offset in view direction e.g. 0.4
+        Real mShadowTextureFadeStart; /// As a proportion e.g. 0.6
+        Real mShadowTextureFadeEnd; /// As a proportion e.g. 0.9
 		bool mShadowTextureSelfShadow;
 		Pass* mShadowTextureCustomCasterPass;
 		Pass* mShadowTextureCustomReceiverPass;
@@ -1004,19 +1008,19 @@ namespace Ogre {
 
 
 
-        /// Set of registered lod listeners
+        /// Set of registered LOD listeners
         typedef set<LodListener*>::type LodListenerSet;
         LodListenerSet mLodListeners;
 
-        /// List of movable object lod changed events
+        /// List of movable object LOD changed events
 		typedef vector<MovableObjectLodChangedEvent>::type MovableObjectLodChangedEventList;
         MovableObjectLodChangedEventList mMovableObjectLodChangedEvents;
 
-        /// List of entity mesh lod changed events
+        /// List of entity mesh LOD changed events
         typedef vector<EntityMeshLodChangedEvent>::type EntityMeshLodChangedEventList;
         EntityMeshLodChangedEventList mEntityMeshLodChangedEvents;
 
-        /// List of entity material lod changed events
+        /// List of entity material LOD changed events
         typedef vector<EntityMaterialLodChangedEvent>::type EntityMaterialLodChangedEventList;
         EntityMaterialLodChangedEventList mEntityMaterialLodChangedEvents;
 
@@ -1055,7 +1059,7 @@ namespace Ogre {
 			locking required during rendering lower than to make update locks
 			more granular.
 		*/
-		OGRE_MUTEX(sceneGraphMutex)
+        OGRE_MUTEX(sceneGraphMutex);
 
 		/** Return the instance name of this SceneManager. */
 		const String& getName(void) const { return mName; }
@@ -1722,7 +1726,7 @@ namespace Ogre {
             @return
                 On success, true is returned.
             @par
-                On failiure, false is returned.
+                On failure, false is returned.
         */
         virtual ViewPoint getSuggestedViewpoint(bool random = false);
 
@@ -1737,7 +1741,7 @@ namespace Ogre {
             @return
                 On success, true is returned.
             @par
-                On failiure, false is returned.
+                On failure, false is returned.
         */
         virtual bool setOption( const String& strKey, const void* pValue )
         { (void)strKey; (void)pValue; return false; }
@@ -1753,12 +1757,12 @@ namespace Ogre {
                 On success, true is returned and pDestValue points to the value of the given
                 option.
             @par
-                On failiure, false is returned and pDestValue is set to NULL.
+                On failure, false is returned and pDestValue is set to NULL.
         */
         virtual bool getOption( const String& strKey, void* pDestValue )
         { (void)strKey; (void)pDestValue; return false; }
 
-        /** Method for verifying wether the scene manager has an implementation-specific
+        /** Method for verifying whether the scene manager has an implementation-specific
             option.
             @param
                 strKey The name of the option to check for.
@@ -1791,7 +1795,7 @@ namespace Ogre {
             @param
                 refKeys A reference to a list that will be filled with all the available options.
             @return
-                On success, true is returned. On failiure, false is returned.
+                On success, true is returned. On failure, false is returned.
         */
         virtual bool getOptionKeys( StringVector& refKeys )
         { (void)refKeys; return false; }
@@ -2372,7 +2376,7 @@ namespace Ogre {
             you have to call methods on Node and Animation in a particular order (namely
             Node::resetToInitialState and Animation::apply). To make this easier and to
             help track the current time position of animations, the AnimationState object
-            is provided. </p>
+            is provided.
             So if you don't want to control animation application manually, call this method,
             update the returned object as you like every frame and let SceneManager apply 
             the animation state for you.
@@ -2440,7 +2444,6 @@ namespace Ogre {
             bool doBeginEndFrame = false) ;
 
 		/** Manual rendering method for rendering a single object. 
-		@remarks
 		@param rend The renderable to issue to the pipeline
 		@param pass The pass to use
 		@param vp Pointer to the viewport to render to, or 0 to use the existing viewport
@@ -2579,7 +2582,7 @@ namespace Ogre {
             certain objects; see SceneQuery for details.
         */
         virtual AxisAlignedBoxSceneQuery* 
-            createAABBQuery(const AxisAlignedBox& box, unsigned long mask = 0xFFFFFFFF);
+            createAABBQuery(const AxisAlignedBox& box, uint32 mask = 0xFFFFFFFF);
         /** Creates a SphereSceneQuery for this scene manager. 
         @remarks
             This method creates a new instance of a query object for this scene manager, 
@@ -2593,7 +2596,7 @@ namespace Ogre {
             certain objects; see SceneQuery for details.
         */
         virtual SphereSceneQuery* 
-            createSphereQuery(const Sphere& sphere, unsigned long mask = 0xFFFFFFFF);
+            createSphereQuery(const Sphere& sphere, uint32 mask = 0xFFFFFFFF);
         /** Creates a PlaneBoundedVolumeListSceneQuery for this scene manager. 
         @remarks
         This method creates a new instance of a query object for this scene manager, 
@@ -2607,7 +2610,7 @@ namespace Ogre {
         certain objects; see SceneQuery for details.
         */
         virtual PlaneBoundedVolumeListSceneQuery* 
-            createPlaneBoundedVolumeQuery(const PlaneBoundedVolumeList& volumes, unsigned long mask = 0xFFFFFFFF);
+            createPlaneBoundedVolumeQuery(const PlaneBoundedVolumeList& volumes, uint32 mask = 0xFFFFFFFF);
 
 
         /** Creates a RaySceneQuery for this scene manager. 
@@ -2623,7 +2626,7 @@ namespace Ogre {
             certain objects; see SceneQuery for details.
         */
         virtual RaySceneQuery* 
-            createRayQuery(const Ray& ray, unsigned long mask = 0xFFFFFFFF);
+            createRayQuery(const Ray& ray, uint32 mask = 0xFFFFFFFF);
         //PyramidSceneQuery* createPyramidQuery(const Pyramid& p, unsigned long mask = 0xFFFFFFFF);
         /** Creates an IntersectionSceneQuery for this scene manager. 
         @remarks
@@ -2637,7 +2640,7 @@ namespace Ogre {
             certain objects; see SceneQuery for details.
         */
         virtual IntersectionSceneQuery* 
-            createIntersectionQuery(unsigned long mask = 0xFFFFFFFF);
+            createIntersectionQuery(uint32 mask = 0xFFFFFFFF);
 
         /** Destroys a scene query of any type. */
         virtual void destroyQuery(SceneQuery* query);
@@ -2803,7 +2806,8 @@ namespace Ogre {
 		/** Set the detailed configuration for a shadow texture.
 		@param shadowIndex The index of the texture to configure, must be < the
 			number of shadow textures setting
-		@param width, height The dimensions of the texture
+		@param width The width of the texture
+        @param height The height of the texture
 		@param format The pixel format of the texture
         @param fsaa The level of multisampling to use. Ignored if the device does not support it.
 		@param depthBufferPoolId The pool # it should query the depth buffers from
@@ -2868,9 +2872,8 @@ namespace Ogre {
 		{return mShadowTextureCountPerType[type]; }
 
         /** Sets the size and count of textures used in texture-based shadows. 
-        @remarks
-            @see setShadowTextureSize and setShadowTextureCount for details, this
-            method just allows you to change both at once, which can save on 
+        @see setShadowTextureSize and setShadowTextureCount for details, this
+            method just allows you to change both at once, which can save on
             reallocation if the textures have already been created.
 		@note This is the simple form, see setShadowTextureConfig for the more 
 			complex form.
@@ -3158,11 +3161,11 @@ namespace Ogre {
 		@param customName Custom name for referencing. Must be unique
 		@param meshName The mesh name the instances will be based upon
 		@param groupName The resource name where the mesh lives
-		@param Technique to use, which may be shader based, or hardware based.
+		@param technique Technique to use, which may be shader based, or hardware based.
 		@param numInstancesPerBatch Suggested number of instances per batch. The actual number
 		may end up being lower if the technique doesn't support having so many. It can't be zero
-		@param flags @see InstanceManagerFlags
-		@param InstanceManager only supports using one submesh from the base mesh. This parameter
+		@param flags Flags to pass to the InstanceManager @see InstanceManagerFlags
+		@param subMeshIdx InstanceManager only supports using one submesh from the base mesh. This parameter
 		says which submesh to pick (must be <= Mesh::getNumSubMeshes())
 		@return The new InstanceManager instance
 		*/
@@ -3184,7 +3187,7 @@ namespace Ogre {
 		@remarks
 			Be sure you don't have any InstancedEntity referenced somewhere which was created with
 			this manager, since it will become a dangling pointer.
-		@param customName Name of the manager to remove
+		@param name Name of the manager to remove
 		*/
 		virtual void destroyInstanceManager( const String &name );
 		virtual void destroyInstanceManager( InstanceManager *instanceManager );
@@ -3531,17 +3534,19 @@ namespace Ogre {
         */
         void removeLodListener(LodListener *listener);
 
-        /** Notify that a movable object lod change event has occurred. */
+        /** Notify that a movable object LOD change event has occurred. */
         void _notifyMovableObjectLodChanged(MovableObjectLodChangedEvent& evt);
 
-        /** Notify that an entity mesh lod change event has occurred. */
+        /** Notify that an entity mesh LOD change event has occurred. */
         void _notifyEntityMeshLodChanged(EntityMeshLodChangedEvent& evt);
 
-        /** Notify that an entity material lod change event has occurred. */
+        /** Notify that an entity material LOD change event has occurred. */
         void _notifyEntityMaterialLodChanged(EntityMaterialLodChangedEvent& evt);
 
-        /** Handle lod events. */
+        /** Handle LOD events. */
         void _handleLodEvents();
+
+		IlluminationRenderStage _getCurrentRenderStage() {return mIlluminationStage;}
     };
 
     /** Default implementation of IntersectionSceneQuery. */
@@ -3665,6 +3670,6 @@ namespace Ogre {
 
 } // Namespace
 
-
+#include "OgreHeaderSuffix.h"
 
 #endif

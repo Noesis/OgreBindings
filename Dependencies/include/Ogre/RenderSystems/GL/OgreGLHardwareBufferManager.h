@@ -4,7 +4,7 @@ This source file is part of OGRE
     (Object-oriented Graphics Rendering Engine)
 For the latest info, see http://www.ogre3d.org/
 
-Copyright (c) 2000-2012 Torus Knot Software Ltd
+Copyright (c) 2000-2013 Torus Knot Software Ltd
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,16 +33,18 @@ THE SOFTWARE.
 
 namespace Ogre {
 
+    class GLStateCacheManager;
+
 // Default threshold at which glMapBuffer becomes more efficient than glBufferSubData (32k?)
 #	define OGRE_GL_DEFAULT_MAP_BUFFER_THRESHOLD (1024 * 32)
-
 
     /** Implementation of HardwareBufferManager for OpenGL. */
     class _OgreGLExport GLHardwareBufferManagerBase : public HardwareBufferManagerBase
     {
 	protected:
+        GLStateCacheManager* mStateCacheManager;
 		char* mScratchBufferPool;
-		OGRE_MUTEX(mScratchMutex)
+		OGRE_MUTEX(mScratchMutex);
 		size_t mMapBufferThreshold;
 
     public:
@@ -57,11 +59,18 @@ namespace Ogre {
             HardwareBuffer::Usage usage, bool useShadowBuffer = false);
         /// Create a render to vertex buffer
         RenderToVertexBufferSharedPtr createRenderToVertexBuffer();
+		/// Create a uniform buffer
+		HardwareUniformBufferSharedPtr createUniformBuffer(size_t sizeBytes, HardwareBuffer::Usage usage,bool useShadowBuffer, const String& name = "");
+		HardwareCounterBufferSharedPtr createCounterBuffer(size_t sizeBytes,
+                                                           HardwareBuffer::Usage usage = HardwareBuffer::HBU_DYNAMIC_WRITE_ONLY_DISCARDABLE,
+                                                           bool useShadowBuffer = false, const String& name = "");
         /// Utility function to get the correct GL usage based on HBU's
         static GLenum getGLUsage(unsigned int usage);
 
         /// Utility function to get the correct GL type based on VET's
         static GLenum getGLType(unsigned int type);
+
+        GLStateCacheManager * getStateCacheManager() { return mStateCacheManager; }
 
 		/** Allocator method to allow us to use a pool of memory as a scratch
 			area for hardware buffers. This is because glMapBuffer is incredibly

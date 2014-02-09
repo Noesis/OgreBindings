@@ -7,60 +7,57 @@
 #ifndef __GUI_GUIWRAPPER_H__
 #define __GUI_GUIWRAPPER_H__
 
-#include <Noesis.h>
-#include "OgreSceneManager.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Noesis kernel management
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //@{
-extern "C" NS_DLL_EXPORT void Noesis_Init(Ogre::SceneManager* sceneMgr);
-extern "C" NS_DLL_EXPORT void Noesis_Shutdown();
-extern "C" NS_DLL_EXPORT void Noesis_Tick();
+extern "C" void Noesis_Init();
+extern "C" void Noesis_Shutdown();
+extern "C" void Noesis_Tick();
 //@}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Loads the specified XAML file and creates a Renderer for it using the given surface
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_LoadXAML(void** root, void** uiRenderer, const char* xamlFile,
-    const char* resourcesFile = NULL);
+extern "C" void Noesis_LoadXAML(void** root, void** uiRenderer, const char* xamlFile,
+    const char* resourcesFile = 0);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Modifies renderer settings
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //@{
-extern "C" NS_DLL_EXPORT void Noesis_RendererAntialiasingMode(void* uiRenderer, int mode);
-extern "C" NS_DLL_EXPORT void Noesis_RendererTessMode(void* uiRenderer, int mode);
-extern "C" NS_DLL_EXPORT void Noesis_RendererTessQuality(void* uiRenderer, int quality);
-extern "C" NS_DLL_EXPORT void Noesis_RendererDebugFlags(void* uiRenderer, int flags);
+extern "C" void Noesis_RendererAntialiasingMode(void* uiRenderer, int mode);
+extern "C" void Noesis_RendererTessMode(void* uiRenderer, int mode);
+extern "C" void Noesis_RendererTessQuality(void* uiRenderer, int quality);
+extern "C" void Noesis_RendererFlags(void* uiRenderer, int flags);
 //@}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Updates and renders the specified renderer
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_UpdateRenderer(void* uiRenderer, double time);
+extern "C" void Noesis_Update(void* uiRenderer, double time, int width, int height);
+extern "C" void Noesis_GPURenderOffscreen(void* uiRenderer);
+extern "C" void Noesis_GPURender(void* uiRenderer);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests if mouse is over any UI element
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT bool Noesis_HitTest(void* root, float x, float y);
+extern "C" bool Noesis_HitTest(void* root, float x, float y);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Renderer input events
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //@{
-extern "C" NS_DLL_EXPORT void Noesis_MouseButtonDown(void* uiRenderer, float x, float y,
-	int button);
-extern "C" NS_DLL_EXPORT void Noesis_MouseButtonUp(void* uiRenderer, float x, float y, int button);
-extern "C" NS_DLL_EXPORT void Noesis_MouseDoubleClick(void* uiRenderer, float x, float y,
-    int button);
-extern "C" NS_DLL_EXPORT void Noesis_MouseMove(void* uiRenderer, float x, float y);
-extern "C" NS_DLL_EXPORT void Noesis_MouseWheel(void* uiRenderer, float x, float y,
-    int wheelRotation);
+extern "C" void Noesis_MouseButtonDown(void* uiRenderer, float x, float y, int button);
+extern "C" void Noesis_MouseButtonUp(void* uiRenderer, float x, float y, int button);
+extern "C" void Noesis_MouseDoubleClick(void* uiRenderer, float x, float y, int button);
+extern "C" void Noesis_MouseMove(void* uiRenderer, float x, float y);
+extern "C" void Noesis_MouseWheel(void* uiRenderer, float x, float y, int wheelRotation);
 
-extern "C" NS_DLL_EXPORT void Noesis_KeyDown(void* uiRenderer, int key);
-extern "C" NS_DLL_EXPORT void Noesis_KeyUp(void* uiRenderer, int key);
-extern "C" NS_DLL_EXPORT void Noesis_Char(void* uiRenderer, wchar_t ch);
+extern "C" void Noesis_KeyDown(void* uiRenderer, int key);
+extern "C" void Noesis_KeyUp(void* uiRenderer, int key);
+extern "C" void Noesis_Char(void* uiRenderer, wchar_t ch);
 //@}
 
 

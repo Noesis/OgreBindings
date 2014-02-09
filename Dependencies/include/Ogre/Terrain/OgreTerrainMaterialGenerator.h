@@ -4,7 +4,7 @@ This source file is part of OGRE
 (Object-oriented Graphics Rendering Engine)
 For the latest info, see http://www.ogre3d.org/
 
-Copyright (c) 2000-2012 Torus Knot Software Ltd
+Copyright (c) 2000-2013 Torus Knot Software Ltd
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -86,7 +86,10 @@ namespace Ogre
 				elementCount == e.elementCount;
 		}
 
-		TerrainLayerSamplerElement() {}
+		TerrainLayerSamplerElement() : 
+            source(0), semantic(TLSS_ALBEDO), elementStart(0), elementCount(0)
+        {}
+
 		TerrainLayerSamplerElement(uint8 src, TerrainLayerSamplerSemantic sem,
 			uint8 elemStart, uint8 elemCount)
 			: source(src), semantic(sem), elementStart(elemStart), elementCount(elemCount)
@@ -109,7 +112,10 @@ namespace Ogre
 			return alias == s.alias && format == s.format;
 		}
 
-		TerrainLayerSampler() {}
+        TerrainLayerSampler()
+            : alias(""), format(PF_UNKNOWN)
+        {
+        }
 
 		TerrainLayerSampler(const String& aliasName, PixelFormat fmt)
 			: alias(aliasName), format(fmt)
@@ -178,10 +184,12 @@ namespace Ogre
 			const String& getDescription() const { return mDesc; }
 			/// Compressed vertex format supported?
 			virtual bool isVertexCompressionSupported() const = 0;		
-			/// Generate / resuse a material for the terrain
+			/// Generate / reuse a material for the terrain
 			virtual MaterialPtr generate(const Terrain* terrain) = 0;
-			/// Generate / resuse a material for the terrain
+			/// Generate / reuse a material for the terrain
 			virtual MaterialPtr generateForCompositeMap(const Terrain* terrain) = 0;
+			/// Whether to support a light map over the terrain in the shader, if it's present (default true)
+			virtual void setLightmapEnabled(bool enabled) = 0;
 			/// Get the number of layers supported
 			virtual uint8 getMaxLayers(const Terrain* terrain) const = 0;
 			/// Update the composite map for a terrain
@@ -302,6 +310,15 @@ namespace Ogre
 			else
 				return p->generateForCompositeMap(terrain);
 		}
+		/** Whether to support a light map over the terrain in the shader,
+		if it's present (default true). 
+		*/
+		virtual void setLightmapEnabled(bool enabled)
+		{
+			Profile* p = getActiveProfile();
+			if (p)
+				return p->setLightmapEnabled(enabled);
+		}
 		/** Get the maximum number of layers supported with the given terrain. 
 		@note When you change the options on the terrain, this value can change. 
 		*/
@@ -370,8 +387,7 @@ namespace Ogre
 		@param size The requested composite map size
 		@param rect The region of the composite map to update, in image space
 		@param mat The material to use to render the map
-		@param outBox The box region of the texture which has been updated, and
-			should be copied into your final texture
+		@param destCompositeMap A TexturePtr for the composite map to be written into
 		*/
 		virtual void _renderCompositeMap(size_t size, const Rect& rect, 
 			const MaterialPtr& mat, const TexturePtr& destCompositeMap);

@@ -4,7 +4,7 @@ This source file is part of OGRE
     (Object-oriented Graphics Rendering Engine)
 For the latest info, see http://www.ogre3d.org/
 
-Copyright (c) 2000-2012 Torus Knot Software Ltd
+Copyright (c) 2000-2013 Torus Knot Software Ltd
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -105,7 +105,6 @@ namespace Ogre {
 		D3DVERTEXBUFFER_DESC		mBufferDesc;					// Buffer description.		
 		BufferResources*			mSourceBuffer;					// Source buffer resources when working with multiple devices.
 		char*						mSourceLockedBytes;				// Source buffer locked bytes.
-		char*						mSystemMemoryBuffer;			// Consistent system memory buffer for multiple devices support in case of write only buffers.
     };
 }
 #endif

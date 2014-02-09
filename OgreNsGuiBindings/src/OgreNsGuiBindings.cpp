@@ -4,6 +4,9 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+#define NS_LOGGER_ENABLED
+
+
 #include <OgreNsGuiBindings.h>
 #include <NsGui/IRenderer.h>
 #include <NsGui/IUIResource.h>
@@ -18,6 +21,7 @@
 #include <NsCore/LoggerMacros.h>
 #include <NsCore/Dll.h>
 #include <NsCore/Vector.h>
+#include <NsCore/NsConfig.h>
 #include <NsDrawing/IVGLSystem.h>
 #include <NsDrawing/IVGLSurface.h>
 #include <NsRender/IRenderTarget2D.h>
@@ -47,6 +51,13 @@ using namespace Noesis::Drawing;
 using namespace Noesis::Resource;
 using namespace Noesis::Render;
 using namespace Noesis::File;
+
+
+NS_DECLARE_SYMBOL(ResourceSystem) 
+
+
+namespace
+{
 
 static Noesis::Gui::Key s_OISKeyMappings[] = 
 {
@@ -290,227 +301,22 @@ static Noesis::Gui::Key s_OISKeyMappings[] =
 	Key_None		//KC_MEDIASELECT = 0xED     // Media Select
 };
 
-namespace
-{
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	IDirect3DDevice9* gD3D9Device = 0;
 	IDirect3DStateBlock9* gStateBlock = 0;
-	IDirect3DSurface9* gRenderTarget = 0;
-	IDirect3DSurface9* gDepthBuffer = 0;
+    IDirect3DSurface9* gRenderTarget = 0;
+    IDirect3DSurface9* gDepthBuffer = 0;
 
-	class OgreRenderer;
-	OgreRenderer* gOgreRender = 0;
-
-	NsVector<Ptr<IRenderer> > gRenderers;
+	NsVector< Ptr<IRenderer> > gRenderers;
 
 	struct RendererInfo
 	{
 		RenderCommands commands;
 	};
 
-	NsMap<Ptr<IRenderer>, RendererInfo> gRenderersInfo;
+	NsMap<IRenderer*, RendererInfo> gRenderersInfo;
 
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-	void ReleaseRenderTargets(IDirect3DSurface9*& renderTarget, IDirect3DSurface9*& depthBuffer)
-	{
-		if (renderTarget != 0)
-		{
-			renderTarget->Release();
-			renderTarget = 0;
-		}
-
-		if (depthBuffer != 0)
-		{
-			depthBuffer->Release();
-			depthBuffer = 0;
-		}
-	}
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-	NsBool UpdateRenderTargets()
-	{
-		NsBool changed = false;
-
-		IDirect3DSurface9* renderTarget;
-		gD3D9Device->GetRenderTarget(0, &renderTarget);
-		IDirect3DSurface9* depthBuffer;
-		gD3D9Device->GetDepthStencilSurface(&depthBuffer);
-
-		if (renderTarget != 0 && depthBuffer != 0)
-		{
-			// update render targets
-			if (gRenderTarget != renderTarget || gDepthBuffer != depthBuffer)
-			{
-				changed = true;
-
-				ReleaseRenderTargets(gRenderTarget, gDepthBuffer);
-
-				gRenderTarget = renderTarget;
-				gRenderTarget->AddRef();
-
-				gDepthBuffer = depthBuffer;
-				gDepthBuffer->AddRef();
-
-				D3DSURFACE_DESC rt;
-				gRenderTarget->GetDesc(&rt);
-
-				NsSize numRenderers = gRenderers.size();
-				for (NsSize i = 0; i < numRenderers; ++i)
-				{
-					gRenderers[i]->SetSize(rt.Width, rt.Height);
-				}
-
-				NS_LOG_OGRE("RenderTarget changed: [0x%p|0x%p] %ux%u", gRenderTarget, gDepthBuffer,
-					rt.Width, rt.Height);
-			}
-		}
-
-		// release references
-		ReleaseRenderTargets(renderTarget, depthBuffer);
-
-		return changed;
-	}
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-	void GetD3D9Device()
-	{
-		Ogre::RenderWindow* pWnd = Ogre::Root::getSingleton().getAutoCreatedWindow();
-		if (pWnd)
-		{
-			pWnd->getCustomAttribute("D3DDEVICE", &gD3D9Device);
-		}
-		else
-		{
-			NS_LOG_OGRE("No Autocreated RenderWindow found!");
-		}	
-	}
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-	// OgreRenderer
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	class OgreRenderer :	
-		public Ogre::RenderQueueListener, 
-		public Ogre::RenderSystem::Listener
-	{
-	public:
-		OgreRenderer(Ogre::SceneManager* sceneMgr) : mSceneMgr(sceneMgr)
-		{
-			Ogre::Root::getSingletonPtr()->getRenderSystem()->addListener(this);
-
-			if (mSceneMgr)
-			{
-				mSceneMgr->addRenderQueueListener(this);
-			}
-		}
-
-		virtual ~OgreRenderer()
-		{
-			Ogre::Root::getSingletonPtr()->getRenderSystem()->removeListener(this);
-
-			if (mSceneMgr)
-			{
-				mSceneMgr->removeRenderQueueListener(this);
-			}
-		}
-
-		void renderQueueStarted(Ogre::uint8 queueGroupId, const Ogre::String& invocation, bool& skipThisInvocation)
-		{
-			try
-			{
-				// We're going to render ourselves in the Overlay Queue so we're always on top
-				if(queueGroupId == Ogre::RENDER_QUEUE_OVERLAY)
-				{
-					if (gStateBlock != 0)
-					{
-						UpdateRenderTargets();
-
-						if (gRenderTarget != 0 && gDepthBuffer != 0)
-						{
-							gStateBlock->Capture();
-
-							// Offscreen Render
-							NsSize numRenderers = gRenderers.size();
-							for (NsSize i = 0; i < numRenderers; ++i)
-							{
-								const Ptr<IRenderer>& renderer = gRenderers[i];
-								RendererInfo& ri = gRenderersInfo[renderer];
-								renderer->Render(ri.commands.offscreenCommands.GetPtr());
-							}
-
-							// Main Screen Render
-							gD3D9Device->SetRenderTarget(0, gRenderTarget);
-							gD3D9Device->SetDepthStencilSurface(gDepthBuffer);
-
-							for (NsSize i = 0; i < numRenderers; ++i)
-							{
-								const Ptr<IRenderer>& renderer = gRenderers[i];
-								RendererInfo& ri = gRenderersInfo[renderer];
-								renderer->Render(ri.commands.commands.GetPtr());
-							}
-
-							gStateBlock->Apply();
-						}
-					}
-					else
-					{
-						deviceResetCallback();
-					}
-				}
-			}
-			catch (Ogre::RenderingAPIException* e)
-			{
-				e;
-				NS_LOG_OGRE(e->getDescription());
-			}
-		}
-
-		void eventOccurred(const Ogre::String& eventName, const Ogre::NameValuePairList* parameters)
-		{
-			if (eventName == "DeviceLost")
-			{
-				deviceLostCallback();
-			}
-			else if(eventName == "DeviceRestored")
-			{
-				deviceResetCallback();
-			}
-		}
-
-	private:
-		Ogre::SceneManager* mSceneMgr;
-
-		void deviceLostCallback()
-		{
-			NS_LOG_OGRE("Device Lost");
-
-			if (gD3D9Device != 0)
-			{
-				if (gStateBlock != 0)
-				{
-					gStateBlock->Release();
-					gStateBlock = 0;
-				}
-
-				NsGetSystem<IDX9RenderSystem>()->OnLostDevice();
-
-				ReleaseRenderTargets(gRenderTarget, gDepthBuffer);
-			}
-		}
-
-		void deviceResetCallback()
-		{
-			NS_LOG_OGRE("Device Reset");
-
-			if (gD3D9Device != 0)
-			{
-				NsGetSystem<IDX9RenderSystem>()->OnResetDevice();
-
-				gD3D9Device->CreateStateBlock(D3DSBT_ALL, &gStateBlock);
-			}
-		}
-	};
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 void NoesisErrorHandler(const NsChar* filename, NsInt line, const NsChar* desc)
@@ -519,128 +325,500 @@ void NoesisErrorHandler(const NsChar* filename, NsInt line, const NsChar* desc)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_Init(Ogre::SceneManager* sceneMgr)
+class Listener: public Ogre::RenderSystem::Listener
 {
-	GetD3D9Device();
+    void eventOccurred(const Ogre::String& eventName, const Ogre::NameValuePairList* parameters)
+    {
+	    if (eventName == "DeviceLost")
+	    {
+			NS_LOG_OGRE("Device Lost");
 
-	if (gD3D9Device != 0)
+			if (gD3D9Device != 0 && gStateBlock != 0)
+			{
+				if (gStateBlock != 0)
+				{
+					gStateBlock->Release();
+					gStateBlock = 0;
+				}
+
+				NsGetSystem<IDX9RenderSystem>()->OnLostDevice();
+			}
+	    }
+	    else if(eventName == "DeviceRestored")
+	    {
+			NS_LOG_OGRE("Device Reset");
+
+			if (gD3D9Device != 0 && gStateBlock == 0)
+			{
+				NsGetSystem<IDX9RenderSystem>()->OnResetDevice();
+
+				gD3D9Device->CreateStateBlock(D3DSBT_ALL, &gStateBlock);
+			}
+	    }
+    }
+} gListener;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+void InitDX9()
+{
+	Ogre::RenderWindow* pWnd = Ogre::Root::getSingleton().getAutoCreatedWindow();
+	if (pWnd)
 	{
-		Noesis::Core::SetErrorHandler(NoesisErrorHandler);
-		NsGetKernel()->Init();
-
-		// Configure systems before their initialization
-		//@{
-		Ptr<IFileSystem> ogreFileSystem = *new OgreNsGuiFileSystem();
-		IResourceSystem::SetFileSystem(ogreFileSystem.GetPtr());
-
-		gD3D9Device->CreateStateBlock(D3DSBT_ALL, &gStateBlock);
-		IDX9RenderSystem::SetDevice(gD3D9Device);
-		//@}
-
-		NsGetKernel()->InitSystems();
-		gOgreRender = new OgreRenderer(sceneMgr);
+		pWnd->getCustomAttribute("D3DDEVICE", &gD3D9Device);
 	}
 	else
 	{
-		NS_ERROR("Ogre3D Graphics Device not hooked");
+		NS_LOG_OGRE("No Autocreated RenderWindow found!");
 	}
+
+    gD3D9Device->CreateStateBlock(D3DSBT_ALL, &gStateBlock);
+	IDX9RenderSystem::SetDevice(gD3D9Device);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_Shutdown()
-{
-    if (gD3D9Device != 0)
-    {
-        delete gOgreRender;
-        gOgreRender = 0;
-        gRenderers.set_capacity(0);
-        gRenderersInfo.clear();
+#include <GL/GL.h>
+#include <glext.h>
 
-        NsGetKernel()->Shutdown();
+#pragma comment(lib, "opengl32.lib")
+
+PFNGLBINDFRAMEBUFFERPROC glBindFramebuffer;
+PFNGLBINDBUFFERPROC glBindBuffer;
+PFNGLACTIVETEXTUREPROC glActiveTexture;
+PFNGLUSEPROGRAMPROC glUseProgram;
+PFNGLGETVERTEXATTRIBIVPROC glGetVertexAttribiv;
+PFNGLENABLEVERTEXATTRIBARRAYARBPROC glEnableVertexAttribArray;
+PFNGLDISABLEVERTEXATTRIBARRAYARBPROC glDisableVertexAttribArray;
+PFNGLBLENDEQUATIONPROC glBlendEquation;
+PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+void InitGL()
+{
+    #define GL_IMPORT(_proto, _func) \
+    { \
+        _func = (_proto)wglGetProcAddress(#_func); \
+        if (_func == NULL) \
+        { \
+            NS_ERROR("wglGetProcAddress %s", #_func); \
+        } \
+        }
+
+    GL_IMPORT(PFNGLBINDFRAMEBUFFERPROC, glBindFramebuffer);
+    GL_IMPORT(PFNGLBINDBUFFERPROC, glBindBuffer);
+    GL_IMPORT(PFNGLACTIVETEXTUREPROC, glActiveTexture);
+    GL_IMPORT(PFNGLUSEPROGRAMPROC, glUseProgram);
+    GL_IMPORT(PFNGLGETVERTEXATTRIBIVPROC, glGetVertexAttribiv);
+    GL_IMPORT(PFNGLENABLEVERTEXATTRIBARRAYARBPROC, glEnableVertexAttribArray);
+    GL_IMPORT(PFNGLDISABLEVERTEXATTRIBARRAYARBPROC, glDisableVertexAttribArray);
+    GL_IMPORT(PFNGLBLENDEQUATIONPROC, glBlendEquation);
+    GL_IMPORT(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+void StoreRenderStateDX9()
+{
+    if (gStateBlock != 0)
+    {
+        gD3D9Device->GetRenderTarget(0, &gRenderTarget);
+        if (gRenderTarget != 0)
+        {
+            gRenderTarget->Release();
+        }
+
+        gD3D9Device->GetDepthStencilSurface(&gDepthBuffer);
+        if (gDepthBuffer != 0)
+        {
+            gDepthBuffer->Release();
+        }
+
+        gStateBlock->Capture();
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_Tick()
+void RestoreRenderStateDX9()
+{
+    if (gStateBlock != 0)
+    {
+        gD3D9Device->SetRenderTarget(0, gRenderTarget);
+        gD3D9Device->SetDepthStencilSurface(gDepthBuffer);
+        gStateBlock->Apply();
+    }
+}
+
+struct RenderStates
+{
+    int             frameBuffer;
+    int             viewport[4];
+    float           clearColors[4];
+    float           clearDepth;
+    int             clearStencil;
+    unsigned char   alphaTest;
+    unsigned char   depthTest;
+    unsigned char   depthWrite;
+    int             depthFunc;
+    unsigned char   stencilTest;
+    int             stencilTestFailOp;
+    int             stencilTestSPDF;
+    int             stencilTestSPDP;
+    int             stencilFunc;
+    int             stencilRef;
+    unsigned int    stencilMask;
+    unsigned int    stencilWriteMask;
+    unsigned char   scissorTest;
+    unsigned char   cullFaceEnabled;
+    int             cullFaceMode;
+    unsigned char   dither;
+    unsigned char   sampleAlphaToCoverage;
+    unsigned char   sampleCoverage;
+    unsigned char   blendEnabled;
+    int             blendEquation;
+    int             blendSource;
+    int             blendDestination;
+    unsigned char   colorWriteMask[4];
+    unsigned int    arrayBuffer;
+    int             vertexAttribsEnabled[6];
+    int             activeTexture;
+    unsigned int    elementArrayBuffer;
+    unsigned int    vertexArrayBuffer;
+    int             boundTexture[4];
+    int             currentProgram;
+    int             unpackAlignment;
+}
+gRenderStates;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+void StoreRenderStateGL()
+{   
+    glGetIntegerv(GL_UNPACK_ALIGNMENT, &gRenderStates.unpackAlignment);
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &gRenderStates.frameBuffer);
+    glGetIntegerv(GL_VIEWPORT, gRenderStates.viewport);
+
+    glGetFloatv(GL_COLOR_CLEAR_VALUE, gRenderStates.clearColors);
+    glGetFloatv(GL_DEPTH_CLEAR_VALUE, &gRenderStates.clearDepth);
+    glGetIntegerv(GL_STENCIL_CLEAR_VALUE, &gRenderStates.clearStencil);
+
+    glGetBooleanv(GL_COLOR_WRITEMASK, gRenderStates.colorWriteMask);
+
+    gRenderStates.dither = glIsEnabled(GL_DITHER);
+    gRenderStates.sampleAlphaToCoverage = glIsEnabled(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    gRenderStates.sampleCoverage = glIsEnabled(GL_SAMPLE_COVERAGE);
+    gRenderStates.alphaTest = glIsEnabled(GL_ALPHA_TEST);
+    gRenderStates.depthTest = glIsEnabled(GL_DEPTH_TEST);
+    glGetBooleanv(GL_DEPTH_WRITEMASK, &gRenderStates.depthWrite);
+    glGetIntegerv(GL_DEPTH_FUNC, &gRenderStates.depthFunc);
+   
+    gRenderStates.stencilTest = glIsEnabled(GL_STENCIL_TEST);
+    glGetIntegerv(GL_STENCIL_FAIL, &gRenderStates.stencilTestFailOp);
+    glGetIntegerv(GL_STENCIL_PASS_DEPTH_FAIL, &gRenderStates.stencilTestSPDF);
+    glGetIntegerv(GL_STENCIL_PASS_DEPTH_PASS, &gRenderStates.stencilTestSPDP);
+    glGetIntegerv(GL_STENCIL_FUNC, &gRenderStates.stencilFunc);
+    glGetIntegerv(GL_STENCIL_REF, &gRenderStates.stencilRef);
+    glGetIntegerv(GL_STENCIL_VALUE_MASK, (int*)&gRenderStates.stencilMask);
+    glGetIntegerv(GL_STENCIL_WRITEMASK, (int*)&gRenderStates.stencilWriteMask);
+   
+    gRenderStates.scissorTest = glIsEnabled(GL_SCISSOR_TEST);
+    gRenderStates.cullFaceEnabled = glIsEnabled(GL_CULL_FACE);
+    glGetIntegerv(GL_CULL_FACE_MODE, &gRenderStates.cullFaceMode);
+   
+    gRenderStates.blendEnabled = glIsEnabled(GL_BLEND);
+    glGetIntegerv(GL_BLEND_EQUATION_RGB, &gRenderStates.blendEquation);
+    glGetIntegerv(GL_BLEND_SRC_RGB, &gRenderStates.blendSource);
+    glGetIntegerv(GL_BLEND_DST_RGB, &gRenderStates.blendDestination);
+
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &gRenderStates.activeTexture);
+
+    for (NsSize i = 0; i < 4; i++)
+    {
+        glActiveTexture(GL_TEXTURE0 + i);
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &(gRenderStates.boundTexture[i]));
+    }
+
+    glGetIntegerv(GL_CURRENT_PROGRAM, &gRenderStates.currentProgram);
+
+    glGetIntegerv(GL_ARRAY_BUFFER_BINDING, (int*)&gRenderStates.arrayBuffer);
+    for (NsSize i = 0; i < 6; i++)
+    {
+        glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_ENABLED, 
+            &(gRenderStates.vertexAttribsEnabled[i]));
+    }
+   
+    glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, (int*)&gRenderStates.elementArrayBuffer);
+    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, (int*)&gRenderStates.vertexArrayBuffer);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+void RestoreRenderStateGL()
+{   
+    glPixelStorei(GL_UNPACK_ALIGNMENT, gRenderStates.unpackAlignment);
+    glBindFramebuffer(GL_FRAMEBUFFER, gRenderStates.frameBuffer);  
+    glViewport(gRenderStates.viewport[0], gRenderStates.viewport[1], gRenderStates.viewport[2],
+        gRenderStates.viewport[3]);
+
+    glClearColor(gRenderStates.clearColors[0], gRenderStates.clearColors[1],
+        gRenderStates.clearColors[2], gRenderStates.clearColors[3]);
+    glClearDepth(gRenderStates.clearDepth);
+    glClearStencil(gRenderStates.clearStencil);
+
+    glColorMask(gRenderStates.colorWriteMask[0], gRenderStates.colorWriteMask[1],
+        gRenderStates.colorWriteMask[2], gRenderStates.colorWriteMask[3]);
+
+    gRenderStates.dither ? glEnable(GL_DITHER) : glDisable(GL_DITHER);
+    gRenderStates.sampleAlphaToCoverage ? glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE) :
+        glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    gRenderStates.sampleCoverage ? glEnable(GL_SAMPLE_COVERAGE) : glDisable(GL_SAMPLE_COVERAGE);
+
+    gRenderStates.alphaTest ? glEnable(GL_ALPHA_TEST) : glDisable(GL_ALPHA_TEST);
+    gRenderStates.depthTest ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
+    glDepthMask(gRenderStates.depthWrite);
+    glDepthFunc(gRenderStates.depthFunc);
+
+    gRenderStates.stencilTest ? glEnable(GL_STENCIL_TEST) : glDisable(GL_STENCIL_TEST);
+    glStencilOp(gRenderStates.stencilTestFailOp, gRenderStates.stencilTestSPDF,
+            gRenderStates.stencilTestSPDP);
+    glStencilFunc(gRenderStates.stencilFunc, gRenderStates.stencilRef, gRenderStates.stencilMask);
+    glStencilMask(gRenderStates.stencilWriteMask);
+  
+    gRenderStates.scissorTest ? glEnable(GL_SCISSOR_TEST) : glDisable(GL_SCISSOR_TEST);
+    gRenderStates.cullFaceEnabled ? glEnable(GL_CULL_FACE) : glDisable(GL_CULL_FACE);
+    glCullFace(gRenderStates.cullFaceMode);
+
+    gRenderStates.blendEnabled ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
+    glBlendEquation(gRenderStates.blendEquation);
+    glBlendFunc(gRenderStates.blendSource, gRenderStates.blendDestination);
+
+    for (NsSize i = 0; i < 4; i++)
+    {
+        glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_2D, gRenderStates.boundTexture[i]);
+    }
+
+    glActiveTexture(gRenderStates.activeTexture);
+
+    glUseProgram(gRenderStates.currentProgram);
+
+
+    glBindVertexArray(gRenderStates.vertexArrayBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, gRenderStates.arrayBuffer);
+    for (NsSize i = 0; i < 6; i++)
+    {
+        gRenderStates.vertexAttribsEnabled[i] ? 
+            glEnableVertexAttribArray(i) : glDisableVertexAttribArray(i);
+    }
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gRenderStates.elementArrayBuffer);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+void StoreRenderState()
+{
+    if (gD3D9Device != 0)
+    {
+        StoreRenderStateDX9();
+    }
+    else
+    {
+        StoreRenderStateGL();
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+void RestoreRenderState()
+{
+    if (gD3D9Device != 0)
+    {
+        RestoreRenderStateDX9();
+    }
+    else
+    {
+        RestoreRenderStateGL();
+    }
+}
+
+bool IsDeviceLost()
+{
+    return (gD3D9Device != 0 && gStateBlock == 0);
+}
+
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+extern "C" void Noesis_Init()
+{
+    Ogre::Root::getSingletonPtr()->getRenderSystem()->addListener(&gListener);
+
+    //NsConfigValue("Core.Kernel", "NumThreads", "1");
+    //NsConfigValue("Core.Logger", "ServerAddress", "127.0.0.1");
+    //NsConfigValue("Core.MemoryManager", "TrackMemory", true);
+
+    // Init noesisGUI kernel
+    Noesis::Core::SetErrorHandler(NoesisErrorHandler);
+    NsGetKernel()->Init();
+
+    Ptr<IFileSystem> ogreFileSystem;
+
+    // Setup rendersystem
+    Ogre::RenderSystem* renderSystem = Ogre::Root::getSingletonPtr()->getRenderSystem();
+    if (renderSystem->getName() == "Direct3D9 Rendering Subsystem")
+    {
+        // Select Render
+        NsConfigValue("Render.RenderSystem", "Render", "DX9");
+
+        // Setup filesystem
+        ogreFileSystem = *new OgreNsGuiFileSystem("DX9");
+
+        InitDX9();
+    }
+    else if (renderSystem->getName() == "OpenGL Rendering Subsystem")
+    {
+        // Select Render
+        NsConfigValue("Render.RenderSystem", "Render", "GL");
+
+        // Setup filesystem
+        ogreFileSystem = *new OgreNsGuiFileSystem("GL");
+
+        InitGL();
+    }
+    else
+    {
+        NS_ERROR("%s not supported", renderSystem->getName().c_str());
+    }
+
+    IResourceSystem::SetFileSystem(ogreFileSystem.GetPtr());
+    NsGetKernel()->InitSystems();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+extern "C" void Noesis_Shutdown()
 {
 	if (gD3D9Device != 0)
 	{
-		NsGetKernel()->Tick();
-	}
+		if (gStateBlock != 0)
+		{
+			gStateBlock->Release();
+			gStateBlock = 0;
+		}
+    }
+
+    gRenderers.set_capacity(0);
+    gRenderersInfo.clear();
+
+    NsGetKernel()->Shutdown();
+
+    Ogre::Root::getSingletonPtr()->getRenderSystem()->removeListener(&gListener);
 }
 
-NS_DECLARE_SYMBOL(ResourceSystem) 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_LoadXAML(void** root, void** uiRenderer, const char* xamlFile,
+extern "C" void Noesis_Tick()
+{
+    NsGetKernel()->Tick();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+extern "C" void Noesis_LoadXAML(void** root, void** uiRenderer, const char* xamlFile,
 	const char* resourcesFile)
 {
-	if (gD3D9Device != 0)
+	Ptr<FrameworkElement> element = LoadXaml<FrameworkElement>(xamlFile);
+
+	if (element)
 	{
-		Ptr<FrameworkElement> element = LoadXaml<FrameworkElement>(xamlFile);
-
-		if (element)
+		if (!String::IsNullOrEmpty(resourcesFile))
 		{
-			if (!String::IsNullOrEmpty(resourcesFile))
+			Ptr<ResourceDictionary> resources = LoadXaml<ResourceDictionary>(resourcesFile);
+
+			if (resources)
 			{
-				Ptr<ResourceDictionary> resources = LoadXaml<ResourceDictionary>(resourcesFile);
-
-				if (resources)
-				{
-					element->GetResources()->GetMergedDictionaries()->Add(resources.GetPtr());
-				}
+				element->GetResources()->GetMergedDictionaries()->Add(resources.GetPtr());
 			}
-
-			Ptr<IRenderer> renderer = Gui::CreateRenderer(element.GetPtr());
-			{
-				gRenderers.push_back(renderer);
-				gRenderersInfo.insert(nstl::make_pair_ref(renderer, RendererInfo()));
-			}
-
-			*root = element.GetPtr();
-			*uiRenderer = renderer.GetPtr();
+            else
+            {
+                NS_ERROR("Loading %s", resourcesFile);
+            }
 		}
+
+		Ptr<IRenderer> renderer = Gui::CreateRenderer(element.GetPtr());
+		{
+			gRenderers.push_back(renderer);
+            gRenderersInfo.insert(nstl::make_pair_ref(renderer.GetPtr(), RendererInfo()));
+		}
+
+		*root = element.GetPtr();
+		*uiRenderer = renderer.GetPtr();
 	}
+    else
+    {
+        NS_ERROR("Loading %s", xamlFile);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_RendererAntialiasingMode(void* uiRenderer, int mode)
+extern "C" void Noesis_RendererAntialiasingMode(void* uiRenderer, int mode)
 {
 	IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
 	renderer->SetAntialiasingMode((AntialiasingMode)mode);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_RendererTessMode(void* uiRenderer, int mode)
+extern "C" void Noesis_RendererTessMode(void* uiRenderer, int mode)
 {
 	IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
 	renderer->SetTessellationMode((TessellationMode)mode);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_RendererTessQuality(void* uiRenderer, int quality)
+extern "C" void Noesis_RendererTessQuality(void* uiRenderer, int quality)
 {
 	IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
 	renderer->SetTessellationQuality((TessellationQuality)quality);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_RendererDebugFlags(void* uiRenderer, int flags)
+extern "C" void Noesis_RendererFlags(void* uiRenderer, int flags)
 {
 	IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
 	renderer->SetFlags((NsUInt32)flags);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_UpdateRenderer(void* uiRenderer, double time)
+extern "C" void Noesis_Update(void* uiRenderer, double time, int width, int height)
 {
-	Ptr<IRenderer> renderer(static_cast<IRenderer*>(uiRenderer));
-	RendererInfo& ri = gRenderersInfo[renderer];
+	IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
+    renderer->SetSize(width, height);
 	renderer->Update(time);
-	ri.commands = renderer->WaitForUpdate();
+	RendererInfo& ri = gRenderersInfo[renderer];
+    ri.commands = renderer->WaitForUpdate();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT bool Noesis_HitTest(void* root, float x, float y)
+extern "C" void Noesis_GPURenderOffscreen(void* uiRenderer)
+{
+    if (!IsDeviceLost())
+    {
+        IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
+        RendererInfo& ri = gRenderersInfo[renderer];
+
+        StoreRenderState();
+        renderer->Render(ri.commands.offscreenCommands.GetPtr());
+        RestoreRenderState();
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+extern "C" void Noesis_GPURender(void* uiRenderer)
+{
+    if (!IsDeviceLost())
+    {
+        IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
+        RendererInfo& ri = gRenderersInfo[renderer];
+
+        StoreRenderState();
+        renderer->Render(ri.commands.commands.GetPtr());
+        RestoreRenderState();
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+extern "C" bool Noesis_HitTest(void* root, float x, float y)
 {
 	Visual* visual = static_cast<Visual*>(root);
 	Drawing::Point point(x, y);
@@ -648,7 +826,7 @@ extern "C" NS_DLL_EXPORT bool Noesis_HitTest(void* root, float x, float y)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_MouseButtonDown(void* uiRenderer, float x, float y,
+extern "C" void Noesis_MouseButtonDown(void* uiRenderer, float x, float y,
 	int button)
 {
 	IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
@@ -656,14 +834,14 @@ extern "C" NS_DLL_EXPORT void Noesis_MouseButtonDown(void* uiRenderer, float x, 
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_MouseButtonUp(void* uiRenderer, float x, float y, int button)
+extern "C" void Noesis_MouseButtonUp(void* uiRenderer, float x, float y, int button)
 {
 	IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
 	renderer->MouseButtonUp((NsInt)x, (NsInt)y, static_cast<MouseButton>(button));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_MouseDoubleClick(void* uiRenderer, float x, float y,
+extern "C" void Noesis_MouseDoubleClick(void* uiRenderer, float x, float y,
 	int button)
 {
 	IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
@@ -671,14 +849,14 @@ extern "C" NS_DLL_EXPORT void Noesis_MouseDoubleClick(void* uiRenderer, float x,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_MouseMove(void* uiRenderer, float x, float y)
+extern "C" void Noesis_MouseMove(void* uiRenderer, float x, float y)
 {
 	IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
 	renderer->MouseMove((NsInt)x, (NsInt)y);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_MouseWheel(void* uiRenderer, float x, float y,
+extern "C" void Noesis_MouseWheel(void* uiRenderer, float x, float y,
 	int wheelRotation)
 {
 	IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
@@ -686,7 +864,7 @@ extern "C" NS_DLL_EXPORT void Noesis_MouseWheel(void* uiRenderer, float x, float
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_KeyDown(void* uiRenderer, int key)
+extern "C" void Noesis_KeyDown(void* uiRenderer, int key)
 {
 	IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
 
@@ -728,7 +906,7 @@ extern "C" NS_DLL_EXPORT void Noesis_KeyDown(void* uiRenderer, int key)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_KeyUp(void* uiRenderer, int key)
+extern "C" void Noesis_KeyUp(void* uiRenderer, int key)
 {
 	IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
 	Key nsKey = s_OISKeyMappings[key];
@@ -736,7 +914,7 @@ extern "C" NS_DLL_EXPORT void Noesis_KeyUp(void* uiRenderer, int key)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" NS_DLL_EXPORT void Noesis_Char(void* uiRenderer, wchar_t ch)
+extern "C" void Noesis_Char(void* uiRenderer, wchar_t ch)
 {
 	IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
 	renderer->Char(ch);

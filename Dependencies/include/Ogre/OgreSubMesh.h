@@ -4,7 +4,7 @@ This source file is part of OGRE
     (Object-oriented Graphics Rendering Engine)
 For the latest info, see http://www.ogre3d.org/
 
-Copyright (c) 2000-2012 Torus Knot Software Ltd
+Copyright (c) 2000-2013 Torus Knot Software Ltd
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -36,6 +36,7 @@ THE SOFTWARE.
 #include "OgreVertexBoneAssignment.h"
 #include "OgreAnimationTrack.h"
 #include "OgreResourceGroupManager.h"
+#include "OgreHeaderPrefix.h"
 
 namespace Ogre {
 
@@ -253,6 +254,14 @@ namespace Ogre {
         */		
 		bool isBuildEdgesEnabled(void) const { return mBuildEdgesEnabled; }
 		void setBuildEdgesEnabled(bool b);
+        /** Makes a copy of this submesh object and gives it a new name.
+         @param newName
+         The name to give the clone.
+         @param parentMesh
+         Optional mesh to make the parent of the newly created clone.
+         If you leave this blank, the clone will be parented to the same Mesh as the original.
+         */
+        SubMesh * clone(const String& newName, Mesh *parentMesh = 0);
 
     protected:
 
@@ -288,6 +297,8 @@ namespace Ogre {
 	/** @} */
 
 } // namespace
+
+#include "OgreHeaderSuffix.h"
 
 #endif
 

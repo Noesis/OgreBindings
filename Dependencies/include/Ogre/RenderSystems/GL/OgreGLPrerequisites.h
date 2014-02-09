@@ -4,7 +4,7 @@ This source file is part of OGRE
     (Object-oriented Graphics Rendering Engine)
 For the latest info, see http://www.ogre3d.org/
 
-Copyright (c) 2000-2012 Torus Knot Software Ltd
+Copyright (c) 2000-2013 Torus Knot Software Ltd
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -43,6 +43,9 @@ namespace Ogre {
     class GLHardwarePixelBuffer;
     class GLRenderBuffer;
 	class GLDepthBuffer;
+
+    typedef SharedPtr<GLGpuProgram> GLGpuProgramPtr;
+    typedef SharedPtr<GLTexture> GLTexturePtr;
 }
 
 #if OGRE_THREAD_SUPPORT == 1
@@ -58,8 +61,8 @@ namespace Ogre {
 #endif
 #   include <windows.h>
 #   include <wingdi.h>
-#   include <GL/glew.h>
-#   include <GL/wglew.h>
+//#   include <GL/glew.h>
+//#   include <GL/wglew.h>
 #   include <GL/glu.h>
 #elif OGRE_PLATFORM == OGRE_PLATFORM_LINUX
 #   include <GL/glew.h>

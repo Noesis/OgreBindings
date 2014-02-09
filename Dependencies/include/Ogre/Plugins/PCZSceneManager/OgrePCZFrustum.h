@@ -4,7 +4,7 @@ This source file is part of OGRE
 (Object-oriented Graphics Rendering Engine)
 For the latest info, see http://www.ogre3d.org/
 
-Copyright (c) 2000-2012 Torus Knot Software Ltd
+Copyright (c) 2000-2013 Torus Knot Software Ltd
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -97,20 +97,20 @@ namespace Ogre
         /* more detailed check for visibility of an AABB */
         PCZFrustum::Visibility getVisibility(const AxisAlignedBox & bound);
 
-		// calculate  culling planes from portal and Frustum 
-		// origin and add to list of  culling planes
+		/** Calculate  culling planes from portal and Frustum
+            origin and add to list of culling planes */
 		int addPortalCullingPlanes(PortalBase* portal);
-		// remove  culling planes created from the given portal
+		/// Remove  culling planes created from the given portal
 		void removePortalCullingPlanes(PortalBase* portal);
-		// remove all  culling planes
+		/// Remove all  culling planes
 		void removeAllCullingPlanes(void);
-        // set the origin value
+        /// Set the origin value
         void setOrigin(const Vector3 & newOrigin) {mOrigin = newOrigin;}
-        // set the origin plane
+        /// Set the origin plane
         void setOriginPlane(const Vector3 &rkNormal, const Vector3 &rkPoint);
-        // tell the frustum whether or not to use the originplane
+        /// Tell the frustum whether or not to use the originplane
         void setUseOriginPlane(bool yesno) {mUseOriginPlane = yesno;}
-		// get an unused PCPlane from the CullingPlane Reservoir
+		/// Get an unused PCPlane from the CullingPlane Reservoir
 		PCPlane * getUnusedCullingPlane(void);
 
 		/// Set the projection type of this PCZFrustum.

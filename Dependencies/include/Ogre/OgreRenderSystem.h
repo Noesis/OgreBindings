@@ -4,7 +4,7 @@ This source file is part of OGRE
 (Object-oriented Graphics Rendering Engine)
 For the latest info, see http://www.ogre3d.org
 
-Copyright (c) 2000-2012 Torus Knot Software Ltd
+Copyright (c) 2000-2013 Torus Knot Software Ltd
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -46,6 +46,7 @@ THE SOFTWARE.
 #include "OgreGpuProgram.h"
 #include "OgrePlane.h"
 #include "OgreIteratorWrappers.h"
+#include "OgreHeaderPrefix.h"
 
 namespace Ogre
 {
@@ -76,7 +77,7 @@ namespace Ogre
 		/// Projective texture
 		TEXCALC_PROJECTIVE_TEXTURE
 	};
-	/// Enum describing the various actions which can be taken onthe stencil buffer
+	/// Enum describing the various actions which can be taken on the stencil buffer
 	enum StencilOperation
 	{
 		/// Leave the stencil buffer unchanged
@@ -203,15 +204,19 @@ namespace Ogre
 		automatically, based on settings chosen so far. This saves
 		an extra call to _createRenderWindow
 		for the main render window.
-		@par
-		If an application has more specific window requirements,
-		however (e.g. a level design app), it should specify false
-		for this parameter and do it manually.
+		@param
+		windowTitle Sets the app window title
 		@return
 		A pointer to the automatically created window, if requested, otherwise null.
 		*/
 		virtual RenderWindow* _initialise(bool autoCreateWindow, const String& windowTitle = "OGRE Render Window");
 
+		/*
+		Returns whether under the current render system buffers marked as TU_STATIC can be locked for update
+		@remarks
+		Needed in the implementation of DirectX9 with DirectX9Ex driver
+		*/
+		virtual bool isStaticBufferLockable() const { return true; }
 
 		/** Query the real capabilities of the GPU and driver in the RenderSystem*/
 		virtual RenderSystemCapabilities* createRenderSystemCapabilities() const = 0;
@@ -265,7 +270,7 @@ namespace Ogre
 		*/
 		void setWBufferEnabled(bool enabled);
 
-		/** Returns true if the renderer will try to use W-buffers when avalible.
+		/** Returns true if the renderer will try to use W-buffers when available.
 		*/
 		bool getWBufferEnabled(void) const;
 
@@ -429,6 +434,22 @@ namespace Ogre
              <td>&nbsp;</td>
          </tr>
          <tr>
+             <td>externalSharegroup</td>
+             <td>EAGLSharegroup pointer as an integer</td>
+             <td>0</td>
+             <td>External sharegroup, used to shared GL resources between contexts</td>
+             <td>iOS Specific</td>
+             <td>&nbsp;</td>
+         </tr>
+         <tr>
+             <td>Full Screen</td>
+             <td>true, false</td>
+             <td>false</td>
+             <td>Specify whether to create the window in full screen mode</td>
+             <td>OS X Specific</td>
+             <td>&nbsp;</td>
+         </tr>
+         <tr>
 			<td>FSAA</td>
 			<td>Positive integer (usually 0, 2, 4, 8, 16)</td>
 			<td>0</td>
@@ -565,31 +586,12 @@ namespace Ogre
 		*/
 		virtual String getErrorDescription(long errorNumber) const = 0;
 
-		/** Defines whether or now fullscreen render windows wait for the vertical blank before flipping buffers.
-		@remarks
-		By default, all rendering windows wait for a vertical blank (when the CRT beam turns off briefly to move
-		from the bottom right of the screen back to the top left) before flipping the screen buffers. This ensures
-		that the image you see on the screen is steady. However it restricts the frame rate to the refresh rate of
-		the monitor, and can slow the frame rate down. You can speed this up by not waiting for the blank, but
-		this has the downside of introducing 'tearing' artefacts where part of the previous frame is still displayed
-		as the buffers are switched. Speed vs quality, you choose.
-		@note
-		Has NO effect on windowed mode render targets. Only affects fullscreen mode.
-		@param
-		enabled If true, the system waits for vertical blanks - quality over speed. If false it doesn't - speed over quality.
-		*/
-		void setWaitForVerticalBlank(bool enabled);
-
-		/** Returns true if the system is synchronising frames with the monitor vertical blank.
-		*/
-		bool getWaitForVerticalBlank(void) const;
-
 		/** Returns the global instance vertex buffer.
 		*/
         HardwareVertexBufferSharedPtr getGlobalInstanceVertexBuffer() const;
 		/** Sets the global instance vertex buffer.
 		*/
-        void setGlobalInstanceVertexBuffer(const HardwareVertexBufferSharedPtr val);
+        void setGlobalInstanceVertexBuffer(const HardwareVertexBufferSharedPtr &val);
 		/** Gets vertex declaration for the global vertex buffer for the global instancing
 		*/
         VertexDeclaration* getGlobalInstanceVertexBufferVertexDeclaration() const;
@@ -603,7 +605,6 @@ namespace Ogre
 		*/
         void setGlobalNumberOfInstances(const size_t val);
 
-#ifdef RTSHADER_SYSTEM_BUILD_CORE_SHADERS
 		/** Sets if fixed pipeline rendering is enabled on the system.
 		*/
 		void setFixedPipelineEnabled(bool enabled);
@@ -611,7 +612,6 @@ namespace Ogre
 		/** Returns true if fixed pipeline rendering is enabled on the system.
 		*/
 		bool getFixedPipelineEnabled(void) const;
-#endif
 
 		/** Retrieves an existing DepthBuffer or creates a new one suited for the given RenderTarget
 			and sets it.
@@ -796,6 +796,20 @@ namespace Ogre
 		*/
 		virtual void _setTextureUnitFiltering(size_t unit, FilterType ftype, FilterOptions filter) = 0;
 
+		/** Sets whether the compare func is enabled or not for this texture unit 
+		@param unit The texture unit to set the filtering options for
+		@param compare The state (enabled/disabled)
+		*/
+		virtual void _setTextureUnitCompareEnabled(size_t unit, bool compare) = 0;
+
+
+		/** Sets the compare function to use for a given texture unit
+		@param unit The texture unit to set the filtering options for
+		@param function The comparison function
+		*/
+		virtual void _setTextureUnitCompareFunction(size_t unit, CompareFunction function) = 0;
+
+
 		/** Sets the maximal anisotropy for the specified texture unit.*/
 		virtual void _setTextureLayerAnisotropy(size_t unit, unsigned int maxAnisotropy) = 0;
 
@@ -822,7 +836,7 @@ namespace Ogre
 		virtual void _setTextureMatrix(size_t unit, const Matrix4& xform) = 0;
 
 		/** Sets the global blending factors for combining subsequent renders with the existing frame contents.
-		The result of the blending operation is:</p>
+		The result of the blending operation is:
 		<p align="center">final = (texture * sourceFactor) + (pixel * destFactor)</p>
 		Each of the factors is specified as one of a number of options, as specified in the SceneBlendFactor
 		enumerated type.
@@ -834,7 +848,7 @@ namespace Ogre
 		virtual void _setSceneBlending(SceneBlendFactor sourceFactor, SceneBlendFactor destFactor, SceneBlendOperation op = SBO_ADD) = 0;
 
 		/** Sets the global blending factors for combining subsequent renders with the existing frame contents.
-		The result of the blending operation is:</p>
+		The result of the blending operation is:
 		<p align="center">final = (texture * sourceFactor) + (pixel * destFactor)</p>
 		Each of the factors is specified as one of a number of options, as specified in the SceneBlendFactor
 		enumerated type.
@@ -851,7 +865,7 @@ namespace Ogre
 		/** Sets the global alpha rejection approach for future renders.
 		By default images are rendered regardless of texture alpha. This method lets you change that.
 		@param func The comparison function which must pass for a pixel to be written.
-		@param val The value to compare each pixels alpha value to (0-255)
+		@param value The value to compare each pixels alpha value to (0-255)
 		@param alphaToCoverage Whether to enable alpha to coverage, if supported
 		*/
 		virtual void _setAlphaRejectSettings(CompareFunction func, unsigned char value, bool alphaToCoverage) = 0;
@@ -911,7 +925,7 @@ namespace Ogre
 		rendering operations. This viewport is aware of it's own
 		camera and render target. Must be implemented by subclass.
 
-		@param target Pointer to the appropriate viewport.
+		@param vp Pointer to the appropriate viewport.
 		*/
 		virtual void _setViewport(Viewport *vp) = 0;
 		/** Get the current active viewport for rendering. */
@@ -1139,8 +1153,11 @@ namespace Ogre
 		start up too.
 		@param func The comparison function applied.
 		@param refValue The reference value used in the comparison
-		@param mask The bitmask applied to both the stencil value and the reference value 
+		@param compareMask The bitmask applied to both the stencil value and the reference value 
 		before comparison
+		@param writeMask The bitmask the controls which bits from refValue will be written to 
+		stencil buffer (valid for operations such as SOP_REPLACE).
+		the stencil
 		@param stencilFailOp The action to perform when the stencil check fails
 		@param depthFailOp The action to perform when the stencil check passes, but the
 		depth buffer check still fails
@@ -1150,7 +1167,7 @@ namespace Ogre
 		and the inverse of them will happen for back faces (keep remains the same).
 		*/
 		virtual void setStencilBufferParams(CompareFunction func = CMPF_ALWAYS_PASS, 
-			uint32 refValue = 0, uint32 mask = 0xFFFFFFFF, 
+			uint32 refValue = 0, uint32 compareMask = 0xFFFFFFFF, uint32 writeMask = 0xFFFFFFFF, 
 			StencilOperation stencilFailOp = SOP_KEEP, 
 			StencilOperation depthFailOp = SOP_KEEP,
 			StencilOperation passOp = SOP_KEEP, 
@@ -1199,7 +1216,7 @@ namespace Ogre
 
         /** Returns the default material scheme used by the render system.
             Systems that use the RTSS to emulate a fixed function pipeline 
-            (e.g. OpenGL ES 2, DX11) need to override this function to return
+            (e.g. OpenGL ES 2, GL3+, DX11) need to override this function to return
             the default material scheme of the RTSS ShaderGenerator.
          
             This is currently only used to set the default material scheme for
@@ -1234,6 +1251,13 @@ namespace Ogre
 		/** Returns whether or not a Gpu program of the given type is currently bound. */
 		virtual bool isGpuProgramBound(GpuProgramType gptype);
 
+        /**
+         * Gets the native shading language version for this render system.
+         * Formatted so that it can be used within a shading program. 
+         * For example, OpenGL 3.2 would return 150, while 3.3 would return 330
+         */
+        uint16 getNativeShadingLanguageVersion() const { return mNativeShadingLanguageVersion; }
+
 		/** Sets the user clipping region.
 		*/
 		virtual void setClipPlanes(const PlaneList& clipPlanes);
@@ -1259,7 +1283,7 @@ namespace Ogre
 		virtual void _updateAllRenderTargets(bool swapBuffers = true);
 		/** Internal method for swapping all the buffers on all render targets,
 		if _updateAllRenderTargets was called with a 'false' parameter. */
-		virtual void _swapAllRenderTargetBuffers(bool waitForVsync = true);
+		virtual void _swapAllRenderTargetBuffers();
 
 		/** Sets whether or not vertex windings set should be inverted; this can be important
 		for rendering reflections. */
@@ -1270,7 +1294,7 @@ namespace Ogre
 		*/
 		virtual bool getInvertVertexWinding(void) const;
 
-		/** Sets the 'scissor region' ie the region of the target in which rendering can take place.
+		/** Sets the 'scissor region' i.e. the region of the target in which rendering can take place.
 		@remarks
 		This method allows you to 'mask off' rendering in all but a given rectangular area
 		as identified by the parameters to this method.
@@ -1470,10 +1494,21 @@ namespace Ogre
         */
         virtual void markProfileEvent( const String &event ) = 0;
 
+		/** Determines if the system has anisotropic mip map filter support
+		*/
+		virtual bool hasAnisotropicMipMapFilter() const = 0;
+
+		/** Gets a custom (maybe platform-specific) attribute.
+        @remarks This is a nasty way of satisfying any API's need to see platform-specific details.
+        @param name The name of the attribute.
+        @param pData Pointer to memory of the right kind of structure to receive the info.
+        */
+		virtual void getCustomAttribute(const String& name, void* pData);
+
 	protected:
 
 		/** DepthBuffers to be attached to render targets */
-		DepthBufferMap mDepthBufferPool;
+		DepthBufferMap	mDepthBufferPool;
 
 		/** The render targets. */
 		RenderTargetMap mRenderTargets;
@@ -1486,6 +1521,9 @@ namespace Ogre
 		GpuProgramParametersSharedPtr mActiveVertexGpuProgramParameters;
 		GpuProgramParametersSharedPtr mActiveGeometryGpuProgramParameters;
 		GpuProgramParametersSharedPtr mActiveFragmentGpuProgramParameters;
+		GpuProgramParametersSharedPtr mActiveTesselationHullGpuProgramParameters;
+		GpuProgramParametersSharedPtr mActiveTesselationDomainGpuProgramParameters;
+		GpuProgramParametersSharedPtr mActiveComputeGpuProgramParameters;
 
 		// Texture manager
 		// A concrete class of this will be created and
@@ -1498,8 +1536,6 @@ namespace Ogre
 
 		CullingMode mCullingMode;
 
-		bool mVSync;
-		unsigned int mVSyncInterval;
 		bool mWBuffer;
 
 		size_t mBatchCount;
@@ -1530,10 +1566,8 @@ namespace Ogre
         /// the number of global instances (this number will be multiply by the render op instance number) 
         size_t mGlobalNumberOfInstances;
 
-#ifdef RTSHADER_SYSTEM_BUILD_CORE_SHADERS
 		/// is fixed pipeline enabled
 		bool mEnableFixedPipeline;
-#endif
 
 		/** updates pass iteration rendering state including bound gpu program parameter
 		pass iteration auto constant entry
@@ -1556,6 +1590,9 @@ namespace Ogre
 		bool mVertexProgramBound;
 		bool mGeometryProgramBound;
 		bool mFragmentProgramBound;
+		bool mTesselationHullProgramBound;
+		bool mTesselationDomainProgramBound;
+		bool mComputeProgramBound;
 
 		// Recording user clip planes
 		PlaneList mClipPlanes;
@@ -1575,6 +1612,7 @@ namespace Ogre
 
 
 		DriverVersion mDriverVersion;
+        uint16 mNativeShadingLanguageVersion;
 
 		bool mTexProjRelative;
 		Vector3 mTexProjRelativeOrigin;
@@ -1585,5 +1623,7 @@ namespace Ogre
 	/** @} */
 	/** @} */
 }
+
+#include "OgreHeaderSuffix.h"
 
 #endif

@@ -4,7 +4,7 @@ This source file is part of OGRE
     (Object-oriented Graphics Rendering Engine)
 For the latest info, see http://www.ogre3d.org/
 
-Copyright (c) 2000-2012 Torus Knot Software Ltd
+Copyright (c) 2000-2013 Torus Knot Software Ltd
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -37,6 +37,10 @@ THE SOFTWARE.
 #include "OgreResourceGroupManager.h"
 #include "OgreLodStrategyManager.h"
 #include "OgreWorkQueue.h"       
+
+#if OGRE_PLATFORM == OGRE_PLATFORM_ANDROID
+#include "Android/OgreAndroidLogListener.h"
+#endif
 
 #include <exception>
 
@@ -75,7 +79,7 @@ namespace Ogre
         String mVersion;
 		String mConfigFileName;
 	    bool mQueuedEnd;
-        // In case multiple render windows are created, only once are the resources loaded.
+        /// In case multiple render windows are created, only once are the resources loaded.
         bool mFirstTimePostWindowInit;
 
         // Singletons
@@ -90,20 +94,23 @@ namespace Ogre
         MeshManager* mMeshManager;
         ParticleSystemManager* mParticleManager;
         SkeletonManager* mSkeletonManager;
-        OverlayElementFactory* mPanelFactory;
-        OverlayElementFactory* mBorderPanelFactory;
-        OverlayElementFactory* mTextAreaFactory;
-        OverlayManager* mOverlayManager;
-        FontManager* mFontManager;
+        
         ArchiveFactory *mZipArchiveFactory;
         ArchiveFactory *mEmbeddedZipArchiveFactory;
         ArchiveFactory *mFileSystemArchiveFactory;
+        
+#if OGRE_PLATFORM == OGRE_PLATFORM_ANDROID
+        AndroidLogListener* mAndroidLogger;
+#endif
+        
 		ResourceGroupManager* mResourceGroupManager;
 		ResourceBackgroundQueue* mResourceBackgroundQueue;
 		ShadowTextureManager* mShadowTextureManager;
 		RenderSystemCapabilitiesManager* mRenderSystemCapabilitiesManager;
-		ScriptCompilerManager *mCompilerManager;
+        ScriptCompilerManager *mCompilerManager;
         LodStrategyManager *mLodStrategyManager;
+        PMWorker* mPMWorker;
+        PMInjector* mPMInjector;
 
         Timer* mTimer;
         RenderWindow* mAutoWindow;
@@ -153,9 +160,10 @@ namespace Ogre
             plugins.
             @param
                 pluginsfile The file that contains plugins information.
-                Defaults to "plugins.cfg".
+                Defaults to "plugins.cfg" in release and to "plugins_d.cfg"
+                in debug build.
         */
-        void loadPlugins( const String& pluginsfile = "plugins.cfg" );
+        void loadPlugins(const String& pluginsfile = "plugins" OGRE_BUILD_SUFFIX ".cfg");
 		/** Initialise all loaded plugins - allows plugins to perform actions
 			once the renderer is initialised.
 		*/
@@ -169,14 +177,16 @@ namespace Ogre
         */
         void unloadPlugins();
 
-        // Internal method for one-time tasks after first window creation
+        /// Internal method for one-time tasks after first window creation
         void oneTimePostWindowInit(void);
 
         /** Set of registered frame listeners */
         set<FrameListener*>::type mFrameListeners;
 
-        /** Set of frame listeners marked for removal*/
+        /** Set of frame listeners marked for removal and addition*/
         set<FrameListener*>::type mRemovedFrameListeners;
+        set<FrameListener*>::type mAddedFrameListeners;
+        void _syncAddedRemovedFrameListeners();
 
         /** Indicates the type of event to be considered by calculateEventTime(). */
         enum FrameEventTimeType {
@@ -204,13 +214,14 @@ namespace Ogre
 
         /** Constructor
         @param pluginFileName The file that contains plugins information.
-            Defaults to "plugins.cfg", may be left blank to ignore.
+            Defaults to "plugins.cfg" in release build and to "plugins_d.cfg"
+            in debug build. May be left blank to ignore.
 		@param configFileName The file that contains the configuration to be loaded.
 			Defaults to "ogre.cfg", may be left blank to load nothing.
 		@param logFileName The logfile to create, defaults to Ogre.log, may be 
 			left blank if you've already set up LogManager & Log yourself
 		*/
-        Root(const String& pluginFileName = "plugins.cfg", 
+        Root(const String& pluginFileName = "plugins" OGRE_BUILD_SUFFIX ".cfg", 
 			const String& configFileName = "ogre.cfg", 
 			const String& logFileName = "Ogre.log");
         ~Root();
@@ -477,7 +488,15 @@ namespace Ogre
             @see
                 Root, Root::startRendering
         */
-        void queueEndRendering(void);
+        void queueEndRendering(bool state = true);
+
+        /** Check for planned end of rendering.
+            @remarks
+                This method return true if queueEndRendering() was called before.
+            @see
+                Root, Root::queueEndRendering, Root::startRendering
+        */
+        bool endRenderingQueued(void);
 
         /** Starts / restarts the automatic rendering cycle.
             @remarks
@@ -645,7 +664,7 @@ namespace Ogre
         /** Retrieves a pointer to the window that was created automatically
             @remarks
                 When Root is initialised an optional window is created. This
-                method retreives a pointer to that window.
+                method retrieves a pointer to that window.
             @note
                 returns a null pointer when Root has not been initialised with
                 the option of creating a window.
@@ -691,7 +710,7 @@ namespace Ogre
 		/** Manually load a Plugin contained in a DLL / DSO.
 		 @remarks
 		 	Plugins embedded in DLLs can be loaded at startup using the plugin 
-			configuration file specified when you create Root (default: plugins.cfg).
+			configuration file specified when you create Root.
 			This method allows you to load plugin DLLs directly in code.
 			The DLL in question is expected to implement a dllStartPlugin 
 			method which instantiates a Plugin subclass and calls Root::installPlugin.
@@ -908,7 +927,6 @@ namespace Ogre
 		/** Destroy all RenderQueueInvocationSequences. 
 		@remarks
 			You must ensure that no Viewports are using custom sequences.
-		@param name The name to identify the sequence
 		*/
 		void destroyAllRenderQueueInvocationSequences(void);
 

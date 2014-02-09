@@ -4,7 +4,7 @@ This source file is part of OGRE
 (Object-oriented Graphics Rendering Engine)
 For the latest info, see http://www.ogre3d.org
 
-Copyright (c) 2000-2012 Torus Knot Software Ltd
+Copyright (c) 2000-2013 Torus Knot Software Ltd
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
@@ -178,28 +178,29 @@ protected:
 
 // Attributes.
 protected:
-	// The index of the information on the texture in the table
+	/// The index of the information on the texture in the table
 	ParameterPtr mVSInpTextureTableIndex;
 	
-	TextureUnitState::UVWAddressingMode mTextureAddressings[TAS_MAX_TEXTURES]; // The addressing mode for each texture
-	// The position and size of the texture in the atlas 
+    /// The addressing mode for each texture
+	TextureUnitState::UVWAddressingMode mTextureAddressings[TAS_MAX_TEXTURES];
+	/// The position and size of the texture in the atlas
 	ParameterPtr mVSOutTextureDatas[TAS_MAX_TEXTURES];
-	// The position and size of the texture in the atlas
+	/// The position and size of the texture in the atlas
 	ParameterPtr mPSInpTextureDatas[TAS_MAX_TEXTURES];
-	//A parameter carrying the sizes of the atlas textures
+	/// A parameter carrying the sizes of the atlas textures
 	UniformParameterPtr mPSTextureSizes[TAS_MAX_TEXTURES];
-	// The table containing information on the textures in the atlas
+	/// The table containing information on the textures in the atlas
 	UniformParameterPtr mVSTextureTable[TAS_MAX_TEXTURES];
 
-	//The position of the texture coordinates containing the index information 
+	/// The position of the texture coordinates containing the index information
 	ushort mAtlasTexcoordPos; 
-	//The texture atlas table data
+	/// The texture atlas table data
 	TextureAtlasTablePtr mAtlasTableDatas[TAS_MAX_TEXTURES];
-	//For each texture unit in the pass tells if it uses atlas texture
+	/// For each texture unit in the pass tells if it uses atlas texture
 	bool mIsAtlasTextureUnits[TAS_MAX_TEXTURES];
-	//Tells if the data in mAtlasTableData has been uploaded to the corresponding mVSTextureTable parameter
+	/// Tells if the data in mAtlasTableData has been uploaded to the corresponding mVSTextureTable parameter
 	bool mIsTableDataUpdated;
-	//Tells whether border issue handling uses auto adjust polling position.
+	/// Tells whether border issue handling uses auto adjust polling position.
 	bool mAutoAdjustPollPosition;
 };
 
@@ -266,20 +267,32 @@ public:
 		# <original texture filename>/t/t<atlas filename>, <atlas idx>, <atlas type>, <woffset>, <hoffset>, <depth offset>, <width>, <height>
 	
 		@param filename The full path to the file containing a ".tai" format data.
+		@param textureAtlasTable A table into which the data in the stream will be filled. This
+			parameter will be filled only if it is not null. The system factory keeps a copy of this
+			information in any case.
+	*/
+	bool addTexutreAtlasDefinition( const Ogre::String& filename, TextureAtlasTablePtr textureAtlasTable = TextureAtlasTablePtr());
+    /**
+		Adds a texture atlas definition from a stream. 
+
+		This function loads a texture atlas definition file from a stream. The accepted format for
+		this file is the NVidia Texture Atlas Tools ".tai" file format. This file as
+	
+		The ".tai" format consist of lines, where each line corresponds to a specific texture
+		in the texture atlas. Each line has the following format:
+		# <original texture filename>/t/t<atlas filename>, <atlas idx>, <atlas type>, <woffset>, <hoffset>, <depth offset>, <width>, <height>
+	
 		@param stream A stream to a file containing ".tai" format data
 		@param textureAtlasTable A table into which the data in the stream will be filled. This
 			parameter will be filled only if it is not null. The system factory keeps a copy of this
 			information in any case.
-		@param autoBorderAdjust Sets whether to automatically adjust the image polling area for border 
-			issues.See the Border issues paragraph under the class documentation for more information.
 	*/
-	bool addTexutreAtlasDefinition( const Ogre::String& filename, TextureAtlasTablePtr textureAtlasTable = TextureAtlasTablePtr());
 	bool addTexutreAtlasDefinition( DataStreamPtr stream, TextureAtlasTablePtr textureAtlasTable = TextureAtlasTablePtr());
 
 	/**
 		Set the texture atlas information for a given texture
 		@param textureName Name of an atlas texture
-		@param atlasData a list of records containing the position and size of each 
+		@param atlasData A list of records containing the position and size of each 
 			texture in the atlas
 		@param autoBorderAdjust Sets whether to automatically adjust the image polling area for border 
 			issues.See the Border issues paragraph under the class documentation for more information.

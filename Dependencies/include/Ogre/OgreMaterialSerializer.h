@@ -4,7 +4,7 @@ This source file is part of OGRE
     (Object-oriented Graphics Rendering Engine)
 For the latest info, see http://www.ogre3d.org/
 
-Copyright (c) 2000-2012 Torus Knot Software Ltd
+Copyright (c) 2000-2013 Torus Knot Software Ltd
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,7 @@ THE SOFTWARE.
 #include "OgreTextureUnitState.h"
 #include "OgreGpuProgram.h"
 #include "OgreStringVector.h"
+#include "OgreHeaderPrefix.h"
 
 namespace Ogre {
 
@@ -79,21 +80,21 @@ namespace Ogre {
         Technique* technique;
         Pass* pass;
         TextureUnitState* textureUnit;
-        GpuProgramPtr program; // used when referencing a program, not when defining it
-        bool isVertexProgramShadowCaster; // when referencing, are we in context of shadow caster
-        bool isFragmentProgramShadowCaster; // when referencing, are we in context of shadow caster
-        bool isVertexProgramShadowReceiver; // when referencing, are we in context of shadow caster
-		bool isFragmentProgramShadowReceiver; // when referencing, are we in context of shadow caster
+        GpuProgramPtr program; /// Used when referencing a program, not when defining it
+        bool isVertexProgramShadowCaster; /// When referencing, are we in context of shadow caster
+        bool isFragmentProgramShadowCaster; /// When referencing, are we in context of shadow caster
+        bool isVertexProgramShadowReceiver; /// When referencing, are we in context of shadow caster
+		bool isFragmentProgramShadowReceiver; /// When referencing, are we in context of shadow caster
         GpuProgramParametersSharedPtr programParams;
 		ushort numAnimationParametrics;
-		MaterialScriptProgramDefinition* programDef; // this is used while defining a program
+		MaterialScriptProgramDefinition* programDef; /// This is used while defining a program
 
 		int techLev,	//Keep track of what tech, pass, and state level we are in
 			passLev,
 			stateLev;
         StringVector defaultParamLines;
 
-		// Error reporting state
+		/// Error reporting state
         size_t lineNo;
         String filename;
         AliasTextureNamePairList textureAliases;
@@ -106,7 +107,7 @@ namespace Ogre {
     {	
 	public:
 
-		// Material serizliae event.
+		// Material serialize event.
 		enum SerializeEvent
 		{
 			MSE_PRE_WRITE,
@@ -125,7 +126,7 @@ namespace Ogre {
 			
 			/** Called when material section event raised.					
 			@param ser The MaterialSerializer instance that writes the given material.
-			@param stage The current section writing stage.
+			@param event The current section writing stage.
 			@param skip May set to true by sub-class instances in order to skip the following section write.
 			This parameter relevant only when stage equals MSE_PRE_WRITE. 
 			@param mat The material that is being written.			
@@ -136,7 +137,7 @@ namespace Ogre {
 			
 			/** Called when technique section event raised.				
 			@param ser The MaterialSerializer instance that writes the given material.
-			@param stage The current section writing stage.
+			@param event The current section writing stage.
 			@param skip May set to true by sub-class instances in order to skip the following section write.
 			This parameter relevant only when stage equals MSE_PRE_WRITE. 
 			@param tech The technique that is being written.		
@@ -147,7 +148,7 @@ namespace Ogre {
 		
 			/** Called when pass section event raised.					
 			@param ser The MaterialSerializer instance that writes the given material.
-			@param stage The current section writing stage.
+			@param event The current section writing stage.
 			@param skip May set to true by sub-class instances in order to skip the following section write.
 			This parameter relevant only when stage equals MSE_PRE_WRITE. 
 			@param pass The pass that is being written.		
@@ -158,7 +159,7 @@ namespace Ogre {
 
 			/** Called when GPU program reference section event raised.				
 			@param ser The MaterialSerializer instance that writes the given material.
-			@param stage The current section writing stage.
+			@param event The current section writing stage.
 			@param skip May set to true by sub-class instances in order to skip the following section write.
 			This parameter relevant only when stage equals MSE_PRE_WRITE. 
 			@param attrib The GPU program reference description (vertex_program_ref, fragment_program_ref, etc).		
@@ -184,7 +185,7 @@ namespace Ogre {
 
 			/** Called when texture unit state section event raised.					
 			@param ser The MaterialSerializer instance that writes the given material.
-			@param stage The current section writing stage.
+			@param event The current section writing stage.
 			@param skip May set to true by sub-class instances in order to skip the following section write.
 			This parameter relevant only when stage equals MSE_PRE_WRITE. 
 			@param textureUnit The texture unit state that is being written.		
@@ -260,7 +261,7 @@ namespace Ogre {
 			const String& commandName, const String& identifier, 
 			const GpuProgramParameters::AutoConstantEntry* autoEntry, 
 			const GpuProgramParameters::AutoConstantEntry* defaultAutoEntry, 
-			bool isFloat, size_t physicalIndex, size_t physicalSize,
+			bool isFloat, bool isDouble, size_t physicalIndex, size_t physicalSize,
 			const GpuProgramParametersSharedPtr& params, GpuProgramParameters* defaultParams,
 			const unsigned short level, const bool useMainBuffer);
 		void writeTextureUnit(const TextureUnitState *pTex);
@@ -444,4 +445,7 @@ namespace Ogre {
 	/** @} */
 	/** @} */
 }
+
+#include "OgreHeaderSuffix.h"
+
 #endif

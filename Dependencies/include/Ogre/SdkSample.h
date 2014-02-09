@@ -4,7 +4,7 @@
  (Object-oriented Graphics Rendering Engine)
  For the latest info, see http://www.ogre3d.org/
  
- Copyright (c) 2000-2012 Torus Knot Software Ltd
+ Copyright (c) 2000-2013 Torus Knot Software Ltd
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +32,7 @@
 #include "SdkTrays.h"
 #include "SdkCameraMan.h"
 
-#ifdef USE_RTSHADER_SYSTEM
+#ifdef INCLUDE_RTSHADER_SYSTEM
 #include "OgreRTShaderSystem.h"
 #endif
 
@@ -115,7 +115,7 @@ namespace OgreBites
 					mDetailsPanel->setParamValue(6, Ogre::StringConverter::toString(mCamera->getDerivedOrientation().y));
 					mDetailsPanel->setParamValue(7, Ogre::StringConverter::toString(mCamera->getDerivedOrientation().z));
 
-#ifdef USE_RTSHADER_SYSTEM
+#ifdef INCLUDE_RTSHADER_SYSTEM
 					mDetailsPanel->setParamValue(14, Ogre::StringConverter::toString(mShaderGenerator->getVertexShaderCount()));
 					mDetailsPanel->setParamValue(15, Ogre::StringConverter::toString(mShaderGenerator->getFragmentShaderCount()));		
 #endif
@@ -157,7 +157,7 @@ namespace OgreBites
 					mDetailsPanel->hide();
 				}
 			}
-			else if (evt.key == OIS::KC_T)   // cycle polygon rendering mode
+			else if (evt.key == OIS::KC_T)   // cycle texture filtering mode
 			{
 				Ogre::String newVal;
 				Ogre::TextureFilterOptions tfo;
@@ -222,7 +222,7 @@ namespace OgreBites
 				mWindow->writeContentsToTimestampedFile("screenshot", ".png");
 			}
 
-#ifdef USE_RTSHADER_SYSTEM		
+#ifdef INCLUDE_RTSHADER_SYSTEM		
 			// Toggle schemes.			
 			else if (evt.key == OIS::KC_F2)
 			{	
@@ -317,7 +317,7 @@ namespace OgreBites
 				// Invalidate the scheme in order to re-generate all shaders based technique related to this scheme.
 				mShaderGenerator->invalidateScheme(Ogre::RTShader::ShaderGenerator::DEFAULT_SCHEME_NAME);
 			}	
-#endif // USE_RTSHADER_SYSTEM
+#endif // INCLUDE_RTSHADER_SYSTEM
 
 			mCameraMan->injectKeyDown(evt);
 			return true;
@@ -414,26 +414,20 @@ namespace OgreBites
 		/*-----------------------------------------------------------------------------
 		| Extended to setup a default tray interface and camera controller.
 		-----------------------------------------------------------------------------*/
-#if (OGRE_PLATFORM == OGRE_PLATFORM_APPLE_IOS) || (OGRE_PLATFORM == OGRE_PLATFORM_ANDROID)
-		virtual void _setup(Ogre::RenderWindow* window, OIS::MultiTouch* mouse, FileSystemLayer* fsLayer)
-#else
-		virtual void _setup(Ogre::RenderWindow* window, OIS::Keyboard* keyboard, OIS::Mouse* mouse, FileSystemLayer* fsLayer)
-#endif
+		virtual void _setup(Ogre::RenderWindow* window, InputContext inputContext, Ogre::FileSystemLayer* fsLayer, Ogre::OverlaySystem* overlaySys)
 		{
 			// assign mRoot here in case Root was initialised after the Sample's constructor ran.
 			mRoot = Ogre::Root::getSingletonPtr();
 			mWindow = window;
-#if (OGRE_PLATFORM != OGRE_PLATFORM_APPLE_IOS) && (OGRE_PLATFORM != OGRE_PLATFORM_ANDROID)
-			mKeyboard = keyboard;
-#endif
-			mMouse = mouse;
+			mInputContext = inputContext;
 			mFSLayer = fsLayer;
+			mOverlaySystem = overlaySys;
 
 			locateResources();
 			createSceneManager();
 			setupView();
 
-			mTrayMgr = new SdkTrayManager("SampleControls", window, mouse, this);  // create a tray interface
+			mTrayMgr = new SdkTrayManager("SampleControls", window, inputContext, this);  // create a tray interface
 
 			loadResources();
 			mResourcesLoaded = true;
@@ -457,7 +451,7 @@ namespace OgreBites
 			items.push_back("Filtering");
 			items.push_back("Poly Mode");
 
-#ifdef USE_RTSHADER_SYSTEM
+#ifdef INCLUDE_RTSHADER_SYSTEM
 			items.push_back("RT Shaders");
 			items.push_back("Lighting Model");
 			items.push_back("Compact Policy");
@@ -476,7 +470,7 @@ namespace OgreBites
 			mDetailsPanel->setParamValue(9, "Bilinear");
 			mDetailsPanel->setParamValue(10, "Solid");
 
-#ifdef USE_RTSHADER_SYSTEM
+#ifdef INCLUDE_RTSHADER_SYSTEM
 			mDetailsPanel->setParamValue(11, "Off");
 
             Ogre::Viewport* mainVP = mCamera->getViewport();
@@ -518,6 +512,7 @@ namespace OgreBites
 			mCamera = mSceneMgr->createCamera("MainCamera");
 			mViewport = mWindow->addViewport(mCamera);
 			mCamera->setAspectRatio((Ogre::Real)mViewport->getActualWidth() / (Ogre::Real)mViewport->getActualHeight());
+            mCamera->setAutoAspectRatio(true);
 			mCamera->setNearClipDistance(5);
 
 			mCameraMan = new SdkCameraMan(mCamera);   // create a default camera controller

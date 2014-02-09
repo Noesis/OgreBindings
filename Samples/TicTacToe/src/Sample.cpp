@@ -32,7 +32,7 @@ void Sample::setupEngine()
 	}
 
 	// Create our main window
-	mWindow = mRoot->initialise(true, "TicTacToe");
+	mWindow = mRoot->initialise(true, "noesisGUI: TicTacToe");
 
 	// Parse resources
 	parseResources();
@@ -45,13 +45,17 @@ void Sample::setupEngine()
 	mCamera = mSceneMgr->createCamera("MyCam");
 
 	// Setup NsGui
-	Noesis_Init(mSceneMgr);
+	Noesis_Init();
 	Noesis_LoadXAML(&mUIRoot, &mUIRenderer, "Gui/TicTacToe/MainWindow.xaml");
 	Noesis_RendererAntialiasingMode(mUIRenderer, 1); // PAA
 
-	mTicTac = new TicTacToeLogic((Noesis::Gui::FrameworkElement*)mUIRoot);
+	mTicTac = *new TicTacToeLogic((Noesis::Gui::FrameworkElement*)mUIRoot);
+
 	// Setup input
 	setupInput();
+
+    // Add frame listener
+    mRoot->addFrameListener(this);
 }
 
 void Sample::parseResources()
@@ -109,15 +113,6 @@ void Sample::setupScene()
 {
 	mSceneMgr->setSkyBox(true, "spaceSkyBox");
 
-	Ogre::Entity* pEntity = mSceneMgr->createEntity("SinbadInstance", "Sinbad.mesh");
-	Ogre::SceneNode* pNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
-	pNode->attachObject(pEntity);
-
-	Ogre::Light* pDirLight = mSceneMgr->createLight();
-	pDirLight->setDirection(Ogre::Vector3(0,-1,0));
-	pDirLight->setType(Ogre::Light::LT_DIRECTIONAL);
-	pNode->attachObject(pDirLight);
-
 	mCamera->setNearClipDistance(1.0f);
 	mCamera->setFarClipDistance(100000.0f);
 	mCamera->setPosition(0,0,20.0f);
@@ -165,6 +160,18 @@ bool Sample::mouseReleased(const OIS::MouseEvent &e, OIS::MouseButtonID id)
 	return false;
 }
 
+bool Sample::frameStarted(const Ogre::FrameEvent& e)
+{
+    Noesis_GPURenderOffscreen(mUIRenderer);
+    return true;
+}
+
+bool Sample::frameRenderingQueued(const Ogre::FrameEvent& e)
+{
+    Noesis_GPURender(mUIRenderer);
+    return true;
+}
+
 void Sample::startMainLoop()
 {
 	while(!mExitMainLoop) {
@@ -180,9 +187,20 @@ void Sample::startMainLoop()
 			mKeyboard->capture();
 
 		Noesis_Tick();
-		Noesis_UpdateRenderer(mUIRenderer, ((double)mRoot->getTimer()->getMilliseconds() / 1000.0));
+
+        int width = mWindow->getWidth();
+        int height = mWindow->getHeight();
+        double time = (double)(mRoot->getTimer()->getMilliseconds() / 1000.0);
+		Noesis_Update(mUIRenderer, time, width, height);
 
 		if(!mRoot->renderOneFrame()) 
 			return; 
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+void Sample::Close()
+{
+    mTicTac.Reset();
+    Noesis_Shutdown();
 }

@@ -4,7 +4,7 @@ This source file is part of OGRE
 (Object-oriented Graphics Rendering Engine)
 For the latest info, see http://www.ogre3d.org/
 
-Copyright (c) 2000-2012 Torus Knot Software Ltd
+Copyright (c) 2000-2013 Torus Knot Software Ltd
 Also see acknowledgements in Readme.html
 
 You may use this sample code for anything you like, it is not covered by the
@@ -24,6 +24,7 @@ Description: Base class for all the OGRE examples
 #include "Ogre.h"
 #include "OgreConfigFile.h"
 #include "ExampleFrameListener.h"
+
 // Static plugins declaration section
 // Note that every entry in here adds an extra header / library dependency
 #ifdef OGRE_STATIC_LIB
@@ -59,7 +60,7 @@ Description: Base class for all the OGRE examples
 #   include "macUtils.h"
 #endif
 
-#ifdef USE_RTSHADER_SYSTEM
+#ifdef INCLUDE_RTSHADER_SYSTEM
 
 /** This class simply demonstrates basic usage of the CRTShader system.
 It sub class the material manager listener class and when a target scheme callback
@@ -123,6 +124,8 @@ public:
     {
         mFrameListener = 0;
         mRoot = 0;
+		mOverlaySystem=0;
+
 		// Provide a nice cross platform solution for locating the configuration files
 		// On windows files are searched for in the current working directory, on OS X however
 		// you must provide the full path, the helper function macBundlePath does this for us.
@@ -137,7 +140,7 @@ public:
         mConfigPath = mResourcePath;
 #endif
 
-#ifdef USE_RTSHADER_SYSTEM
+#ifdef INCLUDE_RTSHADER_SYSTEM
 		mShaderGenerator	 = NULL;		
 		mMaterialMgrListener = NULL;
 #endif
@@ -147,6 +150,12 @@ public:
     {
         if (mFrameListener)
             delete mFrameListener;
+		if (mOverlaySystem)
+		{
+			if(mSceneMgr) mSceneMgr->removeRenderQueueListener(mOverlaySystem);
+            OGRE_DELETE mOverlaySystem;
+		}
+
         if (mRoot)
             OGRE_DELETE mRoot;
 
@@ -166,7 +175,7 @@ public:
         // clean up
         destroyScene();	
 
-#ifdef USE_RTSHADER_SYSTEM
+#ifdef INCLUDE_RTSHADER_SYSTEM
 		// Finalize shader generator.
 		finalizeShaderGenerator();
 #endif
@@ -175,6 +184,7 @@ public:
 
 protected:
     Root *mRoot;
+	OverlaySystem* mOverlaySystem;
 #ifdef OGRE_STATIC_LIB
 	StaticPluginLoader mStaticPluginLoader;
 #endif
@@ -184,7 +194,7 @@ protected:
     RenderWindow* mWindow;
 	Ogre::String mResourcePath;
 	Ogre::String mConfigPath;
-#ifdef USE_RTSHADER_SYSTEM
+#ifdef INCLUDE_RTSHADER_SYSTEM
 	RTShader::ShaderGenerator*					mShaderGenerator;			// The Shader generator instance.
 	ShaderGeneratorTechniqueResolverListener*	mMaterialMgrListener;		// Material manager listener.	
 #endif
@@ -206,6 +216,7 @@ protected:
 		
         mRoot = OGRE_NEW Root(pluginsPath, 
             mConfigPath + "ogre.cfg", mResourcePath + "Ogre.log");
+		mOverlaySystem = OGRE_NEW OverlaySystem();
 #ifdef OGRE_STATIC_LIB
 		mStaticPluginLoader.load();
 #endif
@@ -218,7 +229,7 @@ protected:
         chooseSceneManager();
         createCamera();
         createViewports();
-#ifdef USE_RTSHADER_SYSTEM
+#ifdef INCLUDE_RTSHADER_SYSTEM
 		// Initialize shader generator.
 		carryOn = initializeShaderGenerator(mSceneMgr);
 		if (!carryOn) 
@@ -241,7 +252,7 @@ protected:
         return true;
 
     }
-#ifdef USE_RTSHADER_SYSTEM
+#ifdef INCLUDE_RTSHADER_SYSTEM
 	virtual bool initializeShaderGenerator(SceneManager* sceneMgr)
 	{	
 		if (RTShader::ShaderGenerator::initialize())
@@ -334,6 +345,9 @@ protected:
     {
         // Create the SceneManager, in this case a generic one
         mSceneMgr = mRoot->createSceneManager(ST_GENERIC, "ExampleSMInstance");
+
+		if(mOverlaySystem)
+			 mSceneMgr->addRenderQueueListener(mOverlaySystem);
     }
     virtual void createCamera(void)
     {

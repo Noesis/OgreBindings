@@ -4,7 +4,7 @@ This source file is part of OGRE
 (Object-oriented Graphics Rendering Engine)
 For the latest info, see http://www.ogre3d.org/
 
-Copyright (c) 2000-2012 Torus Knot Software Ltd
+Copyright (c) 2000-2013 Torus Knot Software Ltd
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -138,7 +138,7 @@ namespace Ogre
 	{
 	public:
 
-		/* Construct a property.
+		/** Construct a property.
 		@param name The name of the property
 		@param desc A (potentially) long description of the property
 		@param pType The type of the property
@@ -366,7 +366,7 @@ namespace Ogre
 			static_cast<Property<T>*>(baseProp)->set(val);
 		}
 
-		/// Set a named property value, internal implementation (type match required)
+		/// Get a named property value, internal implementation (type match required)
 		template <typename T>
 		void getPropertyImpl(const String& name, T& refVal, PropertyType typeCheck) const
 		{

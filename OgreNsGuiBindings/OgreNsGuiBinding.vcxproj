@@ -12,8 +12,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\OgreNsGuiBindings.h" />
-    <ClInclude Include="include\OgreNsGuiFileSystem.h" />
-    <ClInclude Include="include\OgreNsGuiStream.h" />
+    <ClInclude Include="src\OgreNsGuiFileSystem.h" />
+    <ClInclude Include="src\OgreNsGuiStream.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\OgreNsGuiBindings.cpp" />

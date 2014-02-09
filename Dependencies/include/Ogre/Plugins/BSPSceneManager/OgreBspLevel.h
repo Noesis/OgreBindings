@@ -4,7 +4,7 @@ This source file is part of OGRE
     (Object-oriented Graphics Rendering Engine)
 For the latest info, see http://www.ogre3d.org/
 
-Copyright (c) 2000-2012 Torus Knot Software Ltd
+Copyright (c) 2000-2013 Torus Knot Software Ltd
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -47,11 +47,11 @@ namespace Ogre {
         are more likely to call SceneManager::setWorldGeometry which will
         automatically arrange the loading of the level. Note that this assumes
         that you have asked for an indoor-specialised SceneManager (specify
-        ST_INDOOR when calling Root::getSceneManager).</p>
+        ST_INDOOR when calling Root::getSceneManager).
         Ogre currently only supports loading from Quake3 Arena level files,
         although any source that can be converted into this classes structure
         could also be used. The Quake3 level load process is in a different
-        class called Quake3Level to keep the specifics separate.</p>
+        class called Quake3Level to keep the specifics separate.
     */
     class BspLevel : public Resource
     {
@@ -118,7 +118,7 @@ namespace Ogre {
         int mNumNodes;
         int mNumLeaves;
 		int mNumBrushes;
-        int mLeafStart; // the index at which leaf nodes begin
+        int mLeafStart; /// The index at which leaf nodes begin
 
         /** Vertex format for fixed geometry.
             Note that in this case vertex components (position, normal, texture coords etc)
@@ -135,11 +135,7 @@ namespace Ogre {
             float texcoords[2];
             float lightmap[2];
         };
-        /*
-        /// Array of vertices for whole level.
-        BspVertex* mVertices;
-        int mNumVertices;
-        */
+
         /// Vertex data holding all the data for the level, but able to render parts of it
         VertexData* mVertexData;
 
@@ -153,16 +149,9 @@ namespace Ogre {
         StaticFaceGroup* mFaceGroups;
         int mNumFaceGroups;
 
-
-        /*
-        /// Array of elements i.e. vertex indexes as used by face groups.
-        int* mElements;
-        int mNumElements;
-        */
-
-        /// indexes for the whole level, will be copied to the real indexdata per frame
+        /// Indexes for the whole level, will be copied to the real indexdata per frame
         size_t mNumIndexes;
-        // system-memory buffer
+        /// System-memory buffer
         HardwareIndexBufferSharedPtr mIndexes;
 
         /// Brushes as used for collision, main memory is here
@@ -182,17 +171,17 @@ namespace Ogre {
             up to the nearest byte obviously, which uses far less space than 4-bytes per linked node per source
             node). Of course the limitation here is that you have to each leaf in turn to determine if it is visible
             rather than just following a list, but since this is only done once per frame this is not such a big
-            overhead.</p>
+            overhead.
             Each row in the table is a 'from' cluster, with each bit in the row corresponding to a 'to' cluster,
             both ordered based on cluster index. A 0 in the bit indicates the 'to' cluster is not visible from the
-            'from' cluster, whilst a 1 indicates it is.</p>
+            'from' cluster, whilst a 1 indicates it is.
             As many will notice, this is lifted directly from the Quake implementation of PVS.
         */
         struct VisData
         {
             unsigned char *tableData;
-            int numClusters;            // Number of clusters, therefore number of rows
-            int rowLength;                // Length in bytes of each row (num clusters / 8 rounded up)
+            int numClusters;            /// Number of clusters, therefore number of rows
+            int rowLength;                /// Length in bytes of each row (num clusters / 8 rounded up)
         };
 
         VisData mVisData;
@@ -207,18 +196,18 @@ namespace Ogre {
 
         void tagNodesWithMovable(BspNode* node, const MovableObject* mov, const Vector3& pos);
 
-        // Storage of patches 
+        /// Storage of patches
 		typedef map<int, PatchSurface*>::type PatchMap;
         PatchMap mPatches;
-        // Total number of vertices required for all patches
+        /// Total number of vertices required for all patches
         size_t mPatchVertexCount;
-        // Total number of indexes required for all patches
+        /// Total number of indexes required for all patches
         size_t mPatchIndexCount;
-		// Sky enabled?
+		/// Sky enabled?
 		bool mSkyEnabled;
-		// Sky material
+		/// Sky material
 		String mSkyMaterial;
-		// Sky details
+		/// Sky details
 		Real mSkyCurvature;
 
 
@@ -229,50 +218,7 @@ namespace Ogre {
 
 
     };
-    /** Specialisation of SharedPtr to allow SharedPtr to be assigned to BspLevelPtr 
-    @note Has to be a subclass since we need operator=.
-    We could templatise this instead of repeating per Resource subclass, 
-    except to do so requires a form VC6 does not support i.e.
-    ResourceSubclassPtr<T> : public SharedPtr<T>
-    */
-    class BspLevelPtr : public SharedPtr<BspLevel> 
-    {
-    public:
-        BspLevelPtr() : SharedPtr<BspLevel>() {}
-        explicit BspLevelPtr(BspLevel* rep) : SharedPtr<BspLevel>(rep) {}
-        BspLevelPtr(const BspLevelPtr& r) : SharedPtr<BspLevel>(r) {} 
-        BspLevelPtr(const ResourcePtr& r) : SharedPtr<BspLevel>()
-        {
-			// lock & copy other mutex pointer
-			OGRE_LOCK_MUTEX(*r.OGRE_AUTO_MUTEX_NAME)
-			OGRE_COPY_AUTO_SHARED_MUTEX(r.OGRE_AUTO_MUTEX_NAME)
-            pRep = static_cast<BspLevel*>(r.getPointer());
-            pUseCount = r.useCountPointer();
-            if (pUseCount)
-            {
-                ++(*pUseCount);
-            }
-        }
-
-        /// Operator used to convert a ResourcePtr to a BspLevelPtr
-        BspLevelPtr& operator=(const ResourcePtr& r)
-        {
-            if (pRep == static_cast<BspLevel*>(r.getPointer()))
-                return *this;
-            release();
-			// lock & copy other mutex pointer
-			OGRE_LOCK_MUTEX(*r.OGRE_AUTO_MUTEX_NAME)
-			OGRE_COPY_AUTO_SHARED_MUTEX(r.OGRE_AUTO_MUTEX_NAME)
-            pRep = static_cast<BspLevel*>(r.getPointer());
-            pUseCount = r.useCountPointer();
-            if (pUseCount)
-            {
-                ++(*pUseCount);
-            }
-            return *this;
-        }
-    };
-
+    typedef SharedPtr<BspLevel> BspLevelPtr;
 }
 
 #endif
