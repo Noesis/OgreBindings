@@ -1,6 +1,4 @@
-// Project Include
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include "pch.h"
 #include "Sample.h"
 
 int main( int argc, const char* argv[] ) {	

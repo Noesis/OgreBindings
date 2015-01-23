@@ -4,37 +4,25 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-#ifndef __GUI_OGRESTREAM_H__
-#define __GUI_OGRESTREAM_H__
+#ifndef __GUI_OGRERESOURCEPROVIDER_H__
+#define __GUI_OGRERESOURCEPROVIDER_H__
 
 
-#include <OgreDataStream.h>
+#include <OgreString.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-/// OgreStream
+/// Noesis resource provider implementation using OGRE resource manager
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class OgreNsGuiStream : public Noesis::BaseStream
+class OgreNsGuiResourceProvider: public Noesis::ResourceProvider
 {
 public:
-	/// Constructor
-	OgreNsGuiStream(Ogre::DataStreamPtr dataStream);
+    OgreNsGuiResourceProvider(const char* group);
 
-	/// Destructor
-	virtual ~OgreNsGuiStream();
-
-	/// From Noesis::IStream
-	NsBool CanSeek() const;
-	void SetPosition(NsSize pos);
-	NsSize GetPosition() const;
-	void SetLength(NsSize length);
-	NsSize GetLength() const;
-	NsBool CanRead() const;
-	void Read(void* buffer, NsSize size);
-	void Close();
+    Noesis::Ptr<Noesis::IStream> RequestFile(const NsChar* name);
 
 private:
-	Ogre::DataStreamPtr mDataStream;
+    Ogre::String mGroup;
 };
 
 

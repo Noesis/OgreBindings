@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "Sample.h"
 #include "OgreSceneManager.h"
 #include "OgreNsGuiBindings.h"
@@ -44,12 +45,13 @@ void Sample::setupEngine()
 	mSceneMgr = mRoot->createSceneManager(Ogre::ST_GENERIC);
 	mCamera = mSceneMgr->createCamera("MyCam");
 
-	// Setup NsGui
+	// Setup NoesisGUI
 	Noesis_Init();
-	Noesis_LoadXAML(&mUIRoot, &mUIRenderer, "Gui/TicTacToe/MainWindow.xaml");
-	Noesis_RendererAntialiasingMode(mUIRenderer, 1); // PAA
+	Noesis_LoadXAML(&mUIRoot, &mUIRenderer, "MainWindow.xaml");
+	Noesis_RendererAntialiasingMode(mUIRenderer, NsAntialiasingMode_PPAA);
+    Noesis_RendererTessQuality(mUIRenderer, NsTessellationQuality_High);
 
-	mTicTac = *new TicTacToeLogic((Noesis::Gui::FrameworkElement*)mUIRoot);
+	mTicTac = *new TicTacToeLogic((Noesis::FrameworkElement*)mUIRoot);
 
 	// Setup input
 	setupInput();

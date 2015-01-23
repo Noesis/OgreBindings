@@ -4,62 +4,23 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-#define NS_LOGGER_ENABLED
-
+#include "pch.h"
+#include "OgreNsGuiResourceProvider.h"
+#include "OgreRoot.h"
+#include "OgreRenderWindow.h"
 
 #include <OgreNsGuiBindings.h>
-#include <NsGui/IRenderer.h>
-#include <NsGui/IUIResource.h>
-#include <NsGui/FrameworkElement.h>
-#include <NsGui/ResourceDictionary.h>
-#include <NsGui/Collection.h>
-#include <NsGui/VisualTreeHelper.h>
-#include <NsCore/Kernel.h>
-#include <NsCore/NsSystem.h>
-#include <NsCore/IKernelSystem.h>
-#include <NsCore/StringUtils.h>
-#include <NsCore/LoggerMacros.h>
-#include <NsCore/Dll.h>
-#include <NsCore/Vector.h>
-#include <NsCore/NsConfig.h>
-#include <NsDrawing/IVGLSystem.h>
-#include <NsDrawing/IVGLSurface.h>
-#include <NsRender/IRenderTarget2D.h>
-#include <NsResource/IResourceSystem.h>
-#include <NsResource/BaseResource.h>
-#include <NsRender/IDX9RenderSystem.h>
-#include <NsCore/Symbol.h>
-#include <NsGui/Keyboard.h>
-
-#include "OgreNsGuiFileSystem.h"
-#include "OgreRoot.h"
-#include "OgreRenderSystem.h"
-#include "OgreRenderWindow.h"
-#include "OgreSceneManager.h"
-#include "OgreRenderQueueListener.h"
 
 #include <d3d9.h>
 
 
-#define NS_LOG_OGRE(...) NS_LOG(LogSeverity_Info, "OGRE", __VA_ARGS__)
-
-
 using namespace Noesis;
-using namespace Noesis::Core;
-using namespace Noesis::Gui;
-using namespace Noesis::Drawing;
-using namespace Noesis::Resource;
-using namespace Noesis::Render;
-using namespace Noesis::File;
-
-
-NS_DECLARE_SYMBOL(ResourceSystem) 
 
 
 namespace
 {
 
-static Noesis::Gui::Key s_OISKeyMappings[] = 
+static Noesis::Key s_OISKeyMappings[] = 
 {
 	Key_None,		//KC_UNASSIGNED  = 0x00,
 	Key_Escape,		//KC_ESCAPE      = 0x01,
@@ -331,8 +292,6 @@ class Listener: public Ogre::RenderSystem::Listener
     {
 	    if (eventName == "DeviceLost")
 	    {
-			NS_LOG_OGRE("Device Lost");
-
 			if (gD3D9Device != 0 && gStateBlock != 0)
 			{
 				if (gStateBlock != 0)
@@ -341,17 +300,14 @@ class Listener: public Ogre::RenderSystem::Listener
 					gStateBlock = 0;
 				}
 
-				NsGetSystem<IDX9RenderSystem>()->OnLostDevice();
+                Noesis::GUI::OnLostDevice();
 			}
 	    }
 	    else if(eventName == "DeviceRestored")
 	    {
-			NS_LOG_OGRE("Device Reset");
-
 			if (gD3D9Device != 0 && gStateBlock == 0)
 			{
-				NsGetSystem<IDX9RenderSystem>()->OnResetDevice();
-
+                Noesis::GUI::OnResetDevice();
 				gD3D9Device->CreateStateBlock(D3DSBT_ALL, &gStateBlock);
 			}
 	    }
@@ -362,17 +318,17 @@ class Listener: public Ogre::RenderSystem::Listener
 void InitDX9()
 {
 	Ogre::RenderWindow* pWnd = Ogre::Root::getSingleton().getAutoCreatedWindow();
-	if (pWnd)
+	if (pWnd != 0)
 	{
 		pWnd->getCustomAttribute("D3DDEVICE", &gD3D9Device);
 	}
 	else
 	{
-		NS_LOG_OGRE("No Autocreated RenderWindow found!");
+        NoesisErrorHandler("", 0, "No Autocreated RenderWindow found!");
 	}
 
     gD3D9Device->CreateStateBlock(D3DSBT_ALL, &gStateBlock);
-	IDX9RenderSystem::SetDevice(gD3D9Device);
+    Noesis::GUI::InitDirectX9(gD3D9Device, NoesisErrorHandler);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -412,6 +368,8 @@ void InitGL()
     GL_IMPORT(PFNGLDISABLEVERTEXATTRIBARRAYARBPROC, glDisableVertexAttribArray);
     GL_IMPORT(PFNGLBLENDEQUATIONPROC, glBlendEquation);
     GL_IMPORT(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray);
+
+    Noesis::GUI::InitOpenGL(NoesisErrorHandler);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -635,6 +593,7 @@ void RestoreRenderState()
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 bool IsDeviceLost()
 {
     return (gD3D9Device != 0 && gStateBlock == 0);
@@ -647,45 +606,23 @@ extern "C" void Noesis_Init()
 {
     Ogre::Root::getSingletonPtr()->getRenderSystem()->addListener(&gListener);
 
-    //NsConfigValue("Core.Kernel", "NumThreads", "1");
-    //NsConfigValue("Core.Logger", "ServerAddress", "127.0.0.1");
-    //NsConfigValue("Core.MemoryManager", "TrackMemory", true);
-
-    // Init noesisGUI kernel
-    Noesis::Core::SetErrorHandler(NoesisErrorHandler);
-    NsGetKernel()->Init();
-
-    Ptr<IFileSystem> ogreFileSystem;
-
-    // Setup rendersystem
     Ogre::RenderSystem* renderSystem = Ogre::Root::getSingletonPtr()->getRenderSystem();
     if (renderSystem->getName() == "Direct3D9 Rendering Subsystem")
     {
-        // Select Render
-        NsConfigValue("Render.RenderSystem", "Render", "DX9");
-
-        // Setup filesystem
-        ogreFileSystem = *new OgreNsGuiFileSystem("DX9");
-
         InitDX9();
+        Ptr<OgreNsGuiResourceProvider> provider = *new OgreNsGuiResourceProvider("DX9");
+        Noesis::GUI::AddResourceProvider(provider.GetPtr());
     }
     else if (renderSystem->getName() == "OpenGL Rendering Subsystem")
     {
-        // Select Render
-        NsConfigValue("Render.RenderSystem", "Render", "GL");
-
-        // Setup filesystem
-        ogreFileSystem = *new OgreNsGuiFileSystem("GL");
-
         InitGL();
+        Ptr<OgreNsGuiResourceProvider> provider = *new OgreNsGuiResourceProvider("GL");
+        Noesis::GUI::AddResourceProvider(provider.GetPtr());
     }
     else
     {
         NS_ERROR("%s not supported", renderSystem->getName().c_str());
     }
-
-    IResourceSystem::SetFileSystem(ogreFileSystem.GetPtr());
-    NsGetKernel()->InitSystems();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -703,7 +640,7 @@ extern "C" void Noesis_Shutdown()
     gRenderers.set_capacity(0);
     gRenderersInfo.clear();
 
-    NsGetKernel()->Shutdown();
+    Noesis::GUI::Shutdown();
 
     Ogre::Root::getSingletonPtr()->getRenderSystem()->removeListener(&gListener);
 }
@@ -711,44 +648,29 @@ extern "C" void Noesis_Shutdown()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 extern "C" void Noesis_Tick()
 {
-    NsGetKernel()->Tick();
+    Noesis::GUI::Tick();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 extern "C" void Noesis_LoadXAML(void** root, void** uiRenderer, const char* xamlFile,
 	const char* resourcesFile)
 {
-	Ptr<FrameworkElement> element = LoadXaml<FrameworkElement>(xamlFile);
+	Ptr<FrameworkElement> element = Noesis::GUI::LoadXaml<FrameworkElement>(xamlFile);
 
-	if (element)
+	if (!String::IsNullOrEmpty(resourcesFile))
 	{
-		if (!String::IsNullOrEmpty(resourcesFile))
-		{
-			Ptr<ResourceDictionary> resources = LoadXaml<ResourceDictionary>(resourcesFile);
-
-			if (resources)
-			{
-				element->GetResources()->GetMergedDictionaries()->Add(resources.GetPtr());
-			}
-            else
-            {
-                NS_ERROR("Loading %s", resourcesFile);
-            }
-		}
-
-		Ptr<IRenderer> renderer = Gui::CreateRenderer(element.GetPtr());
-		{
-			gRenderers.push_back(renderer);
-            gRenderersInfo.insert(nstl::make_pair_ref(renderer.GetPtr(), RendererInfo()));
-		}
-
-		*root = element.GetPtr();
-		*uiRenderer = renderer.GetPtr();
+		Ptr<ResourceDictionary> resources = Noesis::GUI::LoadXaml<ResourceDictionary>(resourcesFile);
+		element->GetResources()->GetMergedDictionaries()->Add(resources.GetPtr());
 	}
-    else
-    {
-        NS_ERROR("Loading %s", xamlFile);
-    }
+
+	Ptr<IRenderer> renderer = Noesis::GUI::CreateRenderer(element.GetPtr());
+	{
+		gRenderers.push_back(renderer);
+        gRenderersInfo.insert(nstl::make_pair_ref(renderer.GetPtr(), RendererInfo()));
+	}
+
+	*root = element.GetPtr();
+	*uiRenderer = renderer.GetPtr();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -869,40 +791,14 @@ extern "C" void Noesis_KeyDown(void* uiRenderer, int key)
 	IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
 
     Keyboard* keyboard = renderer->GetContent()->GetKeyboard();
-    NS_ASSERT(keyboard);
+    assert(keyboard != 0);
 
     NsUInt32 keyModifiers = keyboard->GetModifiers();
     NsBool isCtrlPressed = (keyModifiers & ModifierKeys_Control) != 0;
     NsBool isShiftPressed = (keyModifiers & ModifierKeys_Shift) != 0;
 
     Key nsKey = s_OISKeyMappings[key];
-
-    // Notify of key event to the renderer
     renderer->KeyDown(nsKey);
-
-    // Virtual events
-    if (nsKey == Gui::Key_Tab)
-    {
-        renderer->VirtualEvent(isCtrlPressed ?
-            (isShiftPressed ? VirtualEvent_ControlTabPrev : VirtualEvent_ControlTabNext) :
-            (isShiftPressed ? VirtualEvent_DirectionalTabPrev : VirtualEvent_DirectionalTabNext));
-    }
-    else if (nsKey == Gui::Key_Left)
-    {
-        renderer->VirtualEvent(VirtualEvent_DirectionalLeft);
-    }
-    else if (nsKey == Gui::Key_Right)
-    {
-        renderer->VirtualEvent(VirtualEvent_DirectionalRight);
-    }
-    else if (nsKey == Gui::Key_Up)
-    {
-        renderer->VirtualEvent(VirtualEvent_DirectionalUp);
-    }
-    else if (nsKey == Gui::Key_Down)
-    {
-        renderer->VirtualEvent(VirtualEvent_DirectionalDown);
-    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -914,7 +810,7 @@ extern "C" void Noesis_KeyUp(void* uiRenderer, int key)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" void Noesis_Char(void* uiRenderer, wchar_t ch)
+extern "C" void Noesis_Char(void* uiRenderer, int ch)
 {
 	IRenderer* renderer = static_cast<IRenderer*>(uiRenderer);
 	renderer->Char(ch);

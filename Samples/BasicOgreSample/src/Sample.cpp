@@ -44,12 +44,13 @@ void Sample::setupEngine()
 	mSceneMgr = mRoot->createSceneManager(Ogre::ST_GENERIC);
 	mCamera = mSceneMgr->createCamera("MyCam");
 
-	// Setup NsGui
+	// Setup NoesisGUI
 	Noesis_Init();
 
-    Noesis_LoadXAML(&mUIRoot, &mUIRenderer, "Gui/Samples/Time.xaml");
-    //Noesis_LoadXAML(&mUIRoot, &mUIRenderer, "Gui/Samples/Menu.xaml", "Gui/Themes/NoesisStyle.xaml");
-	Noesis_RendererAntialiasingMode(mUIRenderer, 1); // PAA
+    Noesis_LoadXAML(&mUIRoot, &mUIRenderer, "Time.xaml");
+    //Noesis_LoadXAML(&mUIRoot, &mUIRenderer, "Menu.xaml", "Themes/NoesisStyle.xaml");
+	Noesis_RendererAntialiasingMode(mUIRenderer, NsAntialiasingMode_PPAA);
+    Noesis_RendererTessQuality(mUIRenderer, NsTessellationQuality_High);
 
 	// Setup input
 	setupInput();

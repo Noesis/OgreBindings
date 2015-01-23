@@ -8,7 +8,6 @@
 #include "Ogre.h"
 #include "OIS.h"
 #include "TicTacToeLogic.h"
-#include <NsCore/Ptr.h>
 
 class Sample : public OIS::KeyListener, public OIS::MouseListener, public Ogre::FrameListener
 {
@@ -44,8 +43,8 @@ private:
     bool frameStarted(const Ogre::FrameEvent& e);
     bool frameRenderingQueued(const Ogre::FrameEvent& e);
 
-	// NsGui
-	Noesis::Core::Ptr<TicTacToeLogic> mTicTac;
+	// NoesisGUI
+	Noesis::Ptr<TicTacToeLogic> mTicTac;
 
 	void* mUIRoot;
 	void* mUIRenderer;

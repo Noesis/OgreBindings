@@ -4,46 +4,29 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+#include "pch.h"
 #include "TicTacToeLogic.h"
 
-#include <NsGui/ToggleButton.h>
-#include <NsGui/TextBlock.h>
-#include <NsGui/UIElementEvents.h>
-#include <NsGui/ResourceKeyString.h>
-#include <NsGui/Storyboard.h>
-#include <NsGui/FreezableCollection.h>
-#include <NsGui/AnimationUsingKeyFrames.h>
-#include <NsGui/VisualStateManager.h>
-#include <NsGui/VisualStateGroup.h>
-#include <NsGui/VisualState.h>
-#include <NsGui/VisualTreeHelper.h>
-#include <NsGui/Collection.h>
-#include <NsGui/PlaneProjection.h>
-#include <NsGui/CompositeTransform.h>
-#include <NsGui/Nullable.h>
-#include <NsCore/StringUtils.h>
-#include <NsCore/Delegate.h>
-#include <NsCore/DynamicCast.h>
-#include <NsCore/Boxing.h>
-#include <NsCore/ReflectionImplementEmpty.h>
+#include <assert.h>
 
 
 using namespace Noesis;
-using namespace Noesis::Core;
-using namespace Noesis::Gui;
 
 
 NS_DECLARE_SYMBOL(Player1)
 NS_DECLARE_SYMBOL(Player2)
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-TicTacToeLogic::TicTacToeLogic(Noesis::Gui::FrameworkElement* uiRoot): mRoot(uiRoot)
-{
-    NS_ASSERT(mRoot);
+#undef FindResource
 
-    mBoardPanel = NsStaticCast<FrameworkElement*>(mRoot->FindName("Board"));
-    NS_ASSERT(mBoardPanel);
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+TicTacToeLogic::TicTacToeLogic(Noesis::FrameworkElement* uiRoot): mRoot(uiRoot)
+{
+    assert(mRoot);
+
+    mBoardPanel = mRoot->FindName<FrameworkElement>("Board");
+    assert(mBoardPanel);
     mBoardPanel->MouseLeftButtonDown() += MakeDelegate(this, &TicTacToeLogic::BoardClicked);
 
     for (NsSize row = 0; row < 3; ++row)
@@ -52,70 +35,70 @@ TicTacToeLogic::TicTacToeLogic(Noesis::Gui::FrameworkElement* uiRoot): mRoot(uiR
         {
             NsString cellName = NsString::Format("Cell%u%u", row, col);
 
-            ToggleButton* btn = NsStaticCast<ToggleButton*>(mRoot->FindName(cellName.c_str()));
-            NS_ASSERT(btn);
+            ToggleButton* btn = mRoot->FindName<ToggleButton>(cellName.c_str());
+            assert(btn);
 
             Cell& cell = mBoard[row][col];
             cell.btn = btn;
 
-            Ptr<Boxing::BoxedValue> boxedCell = Boxing::Box<Cell*>(&cell);
+            Ptr<BoxedValue> boxedCell = Boxing::Box<Cell*>(&cell);
             btn->SetTag(boxedCell.GetPtr());
             btn->SetIsEnabled(false);
             btn->Checked() += MakeDelegate(this, &TicTacToeLogic::CellChecked);
         }
     }
 
-    mStatusText = NsStaticCast<TextBlock*>(mRoot->FindName("StatusText"));
-    NS_ASSERT(mStatusText);
+    mStatusText = mRoot->FindName<TextBlock>("StatusText");
+    assert(mStatusText);
 
-    mScorePlayer1Text = NsStaticCast<TextBlock*>(mRoot->FindName("ScorePlayer1"));
-    NS_ASSERT(mScorePlayer1Text);
+    mScorePlayer1Text = mRoot->FindName<TextBlock>("ScorePlayer1");
+    assert(mScorePlayer1Text);
 
-    mScorePlayer2Text = NsStaticCast<TextBlock*>(mRoot->FindName("ScorePlayer2"));
-    NS_ASSERT(mScorePlayer2Text);
+    mScorePlayer2Text = mRoot->FindName<TextBlock>("ScorePlayer2");
+    assert(mScorePlayer2Text);
 
-    mScoreTiesText = NsStaticCast<TextBlock*>(mRoot->FindName("ScoreTies"));
-    NS_ASSERT(mScoreTiesText);
+    mScoreTiesText = mRoot->FindName<TextBlock>("ScoreTies");
+    assert(mScoreTiesText);
 
     mScoreText = 0;
 
     Ptr<ResourceKeyString> key;
 
     key = ResourceKeyString::Create("WinAnim");
-    mWinAnimation = NsStaticCast<Storyboard*>(mRoot->FindResource(key.GetPtr()));
+    mWinAnimation = mRoot->FindResource<Storyboard>(key.GetPtr());
     mWinAnimation->Completed() += MakeDelegate(this, &TicTacToeLogic::WinAnimationCompleted);
 
     key = ResourceKeyString::Create("TieAnim");
-    mTieAnimation = NsStaticCast<Storyboard*>(mRoot->FindResource(key.GetPtr()));
+    mTieAnimation = mRoot->FindResource<Storyboard>(key.GetPtr());
     mTieAnimation->Completed() += MakeDelegate(this, &TicTacToeLogic::TieAnimationCompleted);
 
     key = ResourceKeyString::Create("ResetAnim");
-    mResetAnimation = NsStaticCast<Storyboard*>(mRoot->FindResource(key.GetPtr()));
+    mResetAnimation = mRoot->FindResource<Storyboard>(key.GetPtr());
     mResetAnimation->Completed() += MakeDelegate(this, &TicTacToeLogic::ResetAnimationCompleted);
 
     key = ResourceKeyString::Create("ProgressAnim");
-    mProgressAnimation = NsStaticCast<Storyboard*>(mRoot->FindResource(key.GetPtr()));
+    mProgressAnimation = mRoot->FindResource<Storyboard>(key.GetPtr());
 
     key = ResourceKeyString::Create("ProgressFadeAnim");
-    mProgressFadeAnimation = NsStaticCast<Storyboard*>(mRoot->FindResource(key.GetPtr()));
+    mProgressFadeAnimation = mRoot->FindResource<Storyboard>(key.GetPtr());
     mProgressFadeAnimation->Completed() += MakeDelegate(this,
         &TicTacToeLogic::ProgressFadeAnimationCompleted);
 
     key = ResourceKeyString::Create("ScoreHalfAnim");
-    mScoreHalfAnimation = NsStaticCast<Storyboard*>(mRoot->FindResource(key.GetPtr()));
+    mScoreHalfAnimation = mRoot->FindResource<Storyboard>(key.GetPtr());
     mScoreHalfAnimation->Completed() += MakeDelegate(this,
         &TicTacToeLogic::ScoreHalfAnimationCompleted);
 
     key = ResourceKeyString::Create("ScoreEndAnim");
-    mScoreEndAnimation = NsStaticCast<Storyboard*>(mRoot->FindResource(key.GetPtr()));
+    mScoreEndAnimation = mRoot->FindResource<Storyboard>(key.GetPtr());
 
     key = ResourceKeyString::Create("StatusHalfAnim");
-    mStatusHalfAnimation = NsStaticCast<Storyboard*>(mRoot->FindResource(key.GetPtr()));
+    mStatusHalfAnimation = mRoot->FindResource<Storyboard>(key.GetPtr());
     mStatusHalfAnimation->Completed() += MakeDelegate(this,
         &TicTacToeLogic::StatusHalfAnimationCompleted);
 
     key = ResourceKeyString::Create("StatusEndAnim");
-    mStatusEndAnimation = NsStaticCast<Storyboard*>(mRoot->FindResource(key.GetPtr()));
+    mStatusEndAnimation = mRoot->FindResource<Storyboard>(key.GetPtr());
 
     mStatusText->SetText("Player 1 Turn");
     mPlayer = Player_1;
@@ -169,7 +152,7 @@ void TicTacToeLogic::BoardClicked(BaseComponent* sender, const MouseButtonEventA
 void TicTacToeLogic::CellChecked(BaseComponent* sender, const RoutedEventArgs& e)
 {
     ToggleButton* btn = NsStaticCast<ToggleButton*>(sender);
-    Cell& cell = *Boxing::Unbox<Cell*>(NsStaticCast<Boxing::BoxedValue*>(btn->GetTag()));
+    Cell& cell = *Boxing::Unbox<Cell*>(btn->GetTag());
 
     MarkCell(cell);
 
@@ -238,9 +221,9 @@ void TicTacToeLogic::ProgressFadeAnimationCompleted(BaseComponent* sender,
 void TicTacToeLogic::ScoreHalfAnimationCompleted(BaseComponent* sender,
     const TimelineEventArgs& args)
 {
-    NS_ASSERT(mScoreText);
-    NS_ASSERT(mScore > 0);
-    mScoreText->SetText(NsString::Format("%u", mScore));
+    assert(mScoreText);
+    assert(mScore > 0);
+    mScoreText->SetText(NsString::Format("%u", mScore).c_str());
     mScoreEndAnimation->Begin(mRoot);
 }
 
@@ -248,7 +231,7 @@ void TicTacToeLogic::ScoreHalfAnimationCompleted(BaseComponent* sender,
 void TicTacToeLogic::StatusHalfAnimationCompleted(BaseComponent* sender,
     const TimelineEventArgs& args)
 {
-    NS_ASSERT(!mStatusMsg.empty());
+    assert(!mStatusMsg.empty());
     mStatusText->SetText(mStatusMsg.c_str());
     mStatusEndAnimation->Begin(mRoot);
 }
@@ -301,7 +284,7 @@ void TicTacToeLogic::WinGame(const NsString& winPlay)
     mStatusMsg = NsString::Format("Player %d Wins", mPlayer == Player_1 ? 1 : 2);
 
     TimelineCollection* timelines = mWinAnimation->GetChildren();
-    NS_ASSERT(timelines->Count() == 3);
+    assert(timelines->Count() >= 3);
 
     DependencyObject* anim0 = NsStaticCast<DependencyObject*>(timelines->Get(0));
     Storyboard::SetTargetName(anim0, winPlay.c_str());
@@ -330,7 +313,7 @@ void TicTacToeLogic::TieGame()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 void TicTacToeLogic::SwitchPlayer()
 {
-    NS_ASSERT(mPlayer != Player_None);
+    assert(mPlayer != Player_None);
 
     if (mPlayer == Player_1)
     {
@@ -374,14 +357,14 @@ void TicTacToeLogic::UpdateScoreAnimation(const NsChar* targetName)
 {
     // Score Half
     TimelineCollection* timelines= mScoreHalfAnimation->GetChildren();
-    NS_ASSERT(timelines->Count() == 1);
+    assert(timelines->Count() == 1);
 
     DependencyObject* anim0 = NsStaticCast<DependencyObject*>(timelines->Get(0));
     Storyboard::SetTargetName(anim0, targetName);
 
     // Score End
     timelines = mScoreEndAnimation->GetChildren();
-    NS_ASSERT(timelines->Count() == 3);
+    assert(timelines->Count() == 3);
 
     anim0 = NsStaticCast<DependencyObject*>(timelines->Get(0));
     Storyboard::SetTargetName(anim0, targetName);

@@ -12,13 +12,18 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\OgreNsGuiBindings.h" />
-    <ClInclude Include="src\OgreNsGuiFileSystem.h" />
+    <ClInclude Include="src\OgreNsGuiResourceProvider.h" />
     <ClInclude Include="src\OgreNsGuiStream.h" />
+    <ClInclude Include="src\pch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\OgreNsGuiBindings.cpp" />
-    <ClCompile Include="src\OgreNsGuiFileSystem.cpp" />
+    <ClCompile Include="src\OgreNsGuiResourceProvider.cpp" />
     <ClCompile Include="src\OgreNsGuiStream.cpp" />
+    <ClCompile Include="src\pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7638FE88-7B8B-4926-A690-81E658B2D847}</ProjectGuid>
@@ -64,6 +69,8 @@
       <AdditionalIncludeDirectories>include;..\Dependencies\include;..\Dependencies\include\Ogre;..\Dependencies\include\OIS;..\Dependencies\include\NoesisGUI;..\Dependencies\include\boost;..\OgreNsGuiBindings\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions);WIN32;_DEBUG</PreprocessorDefinitions>
       <DisableSpecificWarnings>4786;4503;4251;4275;4290;4661;4996;4127;4100</DisableSpecificWarnings>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -82,6 +89,8 @@
       <StringPooling>true</StringPooling>
       <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions);WIN32;NDEBUG</PreprocessorDefinitions>
       <DisableSpecificWarnings>4786;4503;4251;4275;4290;4661;4996;4127;4100</DisableSpecificWarnings>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>false</GenerateDebugInformation>

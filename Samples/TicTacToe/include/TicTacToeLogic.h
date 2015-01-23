@@ -8,57 +8,33 @@
 #define __GUI_TICTACTOELOGIC_H__
 
 
-#include <Noesis.h>
-#include <NsCore/BaseComponent.h>
-#include <NsCore/ReflectionImplementEmpty.h>
-#include <NsCore/String.h>
-#include <NsCore/Symbol.h>
-
-
-// Forward declarations
-//@{
-namespace Noesis
-{
-namespace Gui
-{
-class FrameworkElement;
-class ToggleButton;
-class TextBlock;
-class Storyboard;
-struct MouseButtonEventArgs;
-struct RoutedEventArgs;
-struct TimelineEventArgs;
-}
-}
-//@}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Application logic for Tic Tac Toe demo game
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class TicTacToeLogic: public Noesis::Core::BaseComponent
+class TicTacToeLogic: public Noesis::BaseComponent
 {
 public:
-    TicTacToeLogic(Noesis::Gui::FrameworkElement* uiRoot);
+    TicTacToeLogic(Noesis::FrameworkElement* uiRoot);
     ~TicTacToeLogic();
 
 private:
-    void BoardClicked(Noesis::Core::BaseComponent* sender,
-        const Noesis::Gui::MouseButtonEventArgs& args);
+    void BoardClicked(Noesis::BaseComponent* sender,
+        const Noesis::MouseButtonEventArgs& args);
 
-    void CellChecked(Noesis::Core::BaseComponent* sender, const Noesis::Gui::RoutedEventArgs& args);
+    void CellChecked(Noesis::BaseComponent* sender, const Noesis::RoutedEventArgs& args);
 
-    void WinAnimationCompleted(Noesis::Core::BaseComponent* sender,
-        const Noesis::Gui::TimelineEventArgs& args);
-    void TieAnimationCompleted(Noesis::Core::BaseComponent* sender,
-        const Noesis::Gui::TimelineEventArgs& args);
-    void ResetAnimationCompleted(Noesis::Core::BaseComponent* sender,
-        const Noesis::Gui::TimelineEventArgs& args);
-    void ProgressFadeAnimationCompleted(Noesis::Core::BaseComponent* sender,
-        const Noesis::Gui::TimelineEventArgs& args);
-    void ScoreHalfAnimationCompleted(Noesis::Core::BaseComponent* sender,
-        const Noesis::Gui::TimelineEventArgs& args);
-    void StatusHalfAnimationCompleted(Noesis::Core::BaseComponent* sender,
-        const Noesis::Gui::TimelineEventArgs& args);
+    void WinAnimationCompleted(Noesis::BaseComponent* sender,
+        const Noesis::TimelineEventArgs& args);
+    void TieAnimationCompleted(Noesis::BaseComponent* sender,
+        const Noesis::TimelineEventArgs& args);
+    void ResetAnimationCompleted(Noesis::BaseComponent* sender,
+        const Noesis::TimelineEventArgs& args);
+    void ProgressFadeAnimationCompleted(Noesis::BaseComponent* sender,
+        const Noesis::TimelineEventArgs& args);
+    void ScoreHalfAnimationCompleted(Noesis::BaseComponent* sender,
+        const Noesis::TimelineEventArgs& args);
+    void StatusHalfAnimationCompleted(Noesis::BaseComponent* sender,
+        const Noesis::TimelineEventArgs& args);
 
     NsSymbol GetPlayerState() const;
 
@@ -81,24 +57,24 @@ private:
     NsBool PlayerCheckedCell(NsSymbol player, NsSize row, NsSize col) const;
 
 private:
-    Noesis::Gui::FrameworkElement* mRoot;
-    Noesis::Gui::FrameworkElement* mBoardPanel;
-    Noesis::Gui::TextBlock* mStatusText;
+    Noesis::FrameworkElement* mRoot;
+    Noesis::FrameworkElement* mBoardPanel;
+    Noesis::TextBlock* mStatusText;
 
-    Noesis::Gui::TextBlock* mScorePlayer1Text;
-    Noesis::Gui::TextBlock* mScorePlayer2Text;
-    Noesis::Gui::TextBlock* mScoreTiesText;
-    Noesis::Gui::TextBlock* mScoreText;
+    Noesis::TextBlock* mScorePlayer1Text;
+    Noesis::TextBlock* mScorePlayer2Text;
+    Noesis::TextBlock* mScoreTiesText;
+    Noesis::TextBlock* mScoreText;
 
-    Noesis::Gui::Storyboard* mWinAnimation;
-    Noesis::Gui::Storyboard* mTieAnimation;
-    Noesis::Gui::Storyboard* mResetAnimation;
-    Noesis::Gui::Storyboard* mProgressAnimation;
-    Noesis::Gui::Storyboard* mProgressFadeAnimation;
-    Noesis::Gui::Storyboard* mScoreHalfAnimation;
-    Noesis::Gui::Storyboard* mScoreEndAnimation;
-    Noesis::Gui::Storyboard* mStatusHalfAnimation;
-    Noesis::Gui::Storyboard* mStatusEndAnimation;
+    Noesis::Storyboard* mWinAnimation;
+    Noesis::Storyboard* mTieAnimation;
+    Noesis::Storyboard* mResetAnimation;
+    Noesis::Storyboard* mProgressAnimation;
+    Noesis::Storyboard* mProgressFadeAnimation;
+    Noesis::Storyboard* mScoreHalfAnimation;
+    Noesis::Storyboard* mScoreEndAnimation;
+    Noesis::Storyboard* mStatusHalfAnimation;
+    Noesis::Storyboard* mStatusEndAnimation;
 
     NsString mStatusMsg;
 
@@ -120,14 +96,19 @@ private:
     struct Cell
     {
         NsSymbol player;
-        Noesis::Gui::ToggleButton* btn;
+        Noesis::ToggleButton* btn;
 
-        NS_IMPLEMENT_INLINE_REFLECTION_(Cell, Noesis::Core::NoParent)
+        NsString ToString() const { return ""; }
+        NsUInt32 GetHashCode() const { return 0; };
+        void Serialize(Noesis::SerializationData* data) const {}
+        void Unserialize(Noesis::UnserializationData* data) {}
+
+        NS_IMPLEMENT_INLINE_REFLECTION_(Cell, Noesis::NoParent)
     };
 
     Cell mBoard[3][3];
 
-    NS_DECLARE_REFLECTION(TicTacToeLogic, Noesis::Core::BaseComponent)
+    NS_DECLARE_REFLECTION(TicTacToeLogic, Noesis::BaseComponent)
 };
 
 

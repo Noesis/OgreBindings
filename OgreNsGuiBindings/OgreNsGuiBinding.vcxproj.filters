@@ -15,7 +15,10 @@
     <ClInclude Include="src\OgreNsGuiStream.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\OgreNsGuiFileSystem.h">
+    <ClInclude Include="src\pch.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\OgreNsGuiResourceProvider.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -23,10 +26,13 @@
     <ClCompile Include="src\OgreNsGuiBindings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\OgreNsGuiFileSystem.cpp">
+    <ClCompile Include="src\OgreNsGuiStream.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\OgreNsGuiStream.cpp">
+    <ClCompile Include="src\pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\OgreNsGuiResourceProvider.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

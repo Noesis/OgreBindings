@@ -17,6 +17,11 @@
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\Sample.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="XAML\Fonts\K22 Ambelyn Condensed.ttf" />
+    <None Include="XAML\Fonts\LetMeRide.ttf" />
+    <None Include="XAML\Time.xaml" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{834A04BD-22BB-4E21-9872-47A3CC9FF220}</ProjectGuid>
     <RootNamespace>OgreSample</RootNamespace>

@@ -3,10 +3,28 @@
   <ItemGroup>
     <ClInclude Include="include\TicTacToeLogic.h" />
     <ClInclude Include="include\Sample.h" />
+    <ClInclude Include="src\pch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\Sample.cpp" />
     <ClCompile Include="src\TicTacToeLogic.cpp" />
+    <ClCompile Include="src\pch.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="XAML">
+      <UniqueIdentifier>{04f330e9-eaf4-461b-96a6-c2c72b7ac2a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="XAML\Fonts">
+      <UniqueIdentifier>{47890a36-d36c-46ee-aec5-3a94b170287d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="XAML\MainWindow.xaml">
+      <Filter>XAML</Filter>
+    </None>
+    <None Include="XAML\Fonts\JandaManateeSolid.ttf">
+      <Filter>XAML\Fonts</Filter>
+    </None>
   </ItemGroup>
 </Project>

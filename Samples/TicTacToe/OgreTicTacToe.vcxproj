@@ -13,11 +13,20 @@
   <ItemGroup>
     <ClInclude Include="include\Sample.h" />
     <ClInclude Include="include\TicTacToeLogic.h" />
+    <ClInclude Include="src\pch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\Sample.cpp" />
     <ClCompile Include="src\TicTacToeLogic.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="XAML\Fonts\JandaManateeSolid.ttf" />
+    <None Include="XAML\MainWindow.xaml" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{35F9EE99-4E59-4F77-869B-9B06F143CF24}</ProjectGuid>
@@ -63,6 +72,8 @@
       <AdditionalIncludeDirectories>include;..\..\Dependencies\include;..\..\Dependencies\include\Ogre;..\..\Dependencies\include\OIS;..\..\Dependencies\include\NoesisGUI;..\..\Dependencies\include\boost;..\..\OgreNsGuiBindings\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions);WIN32;_DEBUG</PreprocessorDefinitions>
       <DisableSpecificWarnings>4786;4503;4251;4275;4290;4661;4996;4127;4100</DisableSpecificWarnings>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -81,6 +92,8 @@
       <StringPooling>true</StringPooling>
       <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions);WIN32;NDEBUG</PreprocessorDefinitions>
       <DisableSpecificWarnings>4786;4503;4251;4275;4290;4661;4996;4127;4100</DisableSpecificWarnings>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

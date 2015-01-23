@@ -7,4 +7,23 @@
   <ItemGroup>
     <ClInclude Include="include\Sample.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Filter Include="XAML">
+      <UniqueIdentifier>{c10aa086-4728-4394-9d61-74f3dd375355}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="XAML\Fonts">
+      <UniqueIdentifier>{fd930dfc-a80e-4811-85f3-8f9a9884c2fa}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="XAML\Fonts\K22 Ambelyn Condensed.ttf">
+      <Filter>XAML\Fonts</Filter>
+    </None>
+    <None Include="XAML\Fonts\LetMeRide.ttf">
+      <Filter>XAML\Fonts</Filter>
+    </None>
+    <None Include="XAML\Time.xaml">
+      <Filter>XAML</Filter>
+    </None>
+  </ItemGroup>
 </Project>

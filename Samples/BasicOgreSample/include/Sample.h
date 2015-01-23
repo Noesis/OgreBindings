@@ -44,7 +44,7 @@ private:
     bool frameStarted(const Ogre::FrameEvent& e);
     bool frameRenderingQueued(const Ogre::FrameEvent& e);
 
-	// NsGui
+	// NoesisGUI
 	void* mUIRoot;
 	void* mUIRenderer;
 };
