@@ -17,24 +17,24 @@
 class OgreNsGuiStream : public Noesis::BaseStream
 {
 public:
-	/// Constructor
-	OgreNsGuiStream(Ogre::DataStreamPtr dataStream);
+    /// Constructor
+    OgreNsGuiStream(Ogre::DataStreamPtr dataStream);
 
-	/// Destructor
-	virtual ~OgreNsGuiStream();
+    /// Destructor
+    virtual ~OgreNsGuiStream();
 
-	/// From Noesis::IStream
-	NsBool CanSeek() const;
-	void SetPosition(NsSize pos);
-	NsSize GetPosition() const;
-	void SetLength(NsSize length);
-	NsSize GetLength() const;
-	NsBool CanRead() const;
-	void Read(void* buffer, NsSize size);
-	void Close();
+    /// From Noesis::IStream
+    NsBool CanSeek() const;
+    void SetPosition(NsSize pos);
+    NsSize GetPosition() const;
+    void SetLength(NsSize length);
+    NsSize GetLength() const;
+    NsBool CanRead() const;
+    void Read(void* buffer, NsSize size);
+    void Close();
 
 private:
-	Ogre::DataStreamPtr mDataStream;
+    Ogre::DataStreamPtr mDataStream;
 };
 
 

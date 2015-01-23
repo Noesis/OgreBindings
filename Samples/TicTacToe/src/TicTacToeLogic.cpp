@@ -14,14 +14,14 @@ using namespace Noesis;
 
 
 NS_DECLARE_SYMBOL(Player1)
-NS_DECLARE_SYMBOL(Player2)
+    NS_DECLARE_SYMBOL(Player2)
 
 
 #undef FindResource
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-TicTacToeLogic::TicTacToeLogic(Noesis::FrameworkElement* uiRoot): mRoot(uiRoot)
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    TicTacToeLogic::TicTacToeLogic(Noesis::FrameworkElement* uiRoot): mRoot(uiRoot)
 {
     assert(mRoot);
 
@@ -401,7 +401,7 @@ NsBool TicTacToeLogic::HasWon(NsString& winPlay)
         winPlay = "WinDiagLR";
         return true;
     }
-    
+
     if (PlayerCheckedDiag(player, 2, 0))
     {
         winPlay = "WinDiagRL";

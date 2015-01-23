@@ -24,26 +24,26 @@ OgreNsGuiStream::~OgreNsGuiStream()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 NsBool OgreNsGuiStream::CanSeek() const
 {
-	return true;
+    return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 void OgreNsGuiStream::SetPosition(NsSize pos)
 {
-	if(!mDataStream.isNull())
-	{
-		mDataStream->seek((size_t)pos);
-	}	
+    if(!mDataStream.isNull())
+    {
+        mDataStream->seek((size_t)pos);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 NsSize OgreNsGuiStream::GetPosition() const
 {
-	if(!mDataStream.isNull())
-	{
-		return mDataStream->tell();
-	}	
-	return 0;
+    if(!mDataStream.isNull())
+    {
+        return mDataStream->tell();
+    }
+    return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -54,34 +54,34 @@ void OgreNsGuiStream::SetLength(NsSize length)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 NsSize OgreNsGuiStream::GetLength() const
 {
-	if(!mDataStream.isNull())
-	{
-		return mDataStream->size();
-	}	
+    if(!mDataStream.isNull())
+    {
+        return mDataStream->size();
+    }
 
-	return 0;
+    return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 NsBool OgreNsGuiStream::CanRead() const
 {
-	return true;
+    return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 void OgreNsGuiStream::Read(void* buffer, NsSize size)
 {
-	if(!mDataStream.isNull())
-	{
-		mDataStream->read(buffer, size);
-	}	
+    if(!mDataStream.isNull())
+    {
+        mDataStream->read(buffer, size);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 void OgreNsGuiStream::Close()
 {
-	if(!mDataStream.isNull())
-	{
-		mDataStream->close();
-	}
+    if(!mDataStream.isNull())
+    {
+        mDataStream->close();
+    }
 }

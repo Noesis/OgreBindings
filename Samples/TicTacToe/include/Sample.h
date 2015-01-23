@@ -12,41 +12,41 @@
 class Sample : public OIS::KeyListener, public OIS::MouseListener, public Ogre::FrameListener
 {
 public:
-	Sample();
-	~Sample();
+    Sample();
+    ~Sample();
 
-	void setupEngine();
-	void setupScene();
-	void startMainLoop();
+    void setupEngine();
+    void setupScene();
+    void startMainLoop();
     void Close();
 
 private:
-	Ogre::Root* mRoot;
-	Ogre::RenderWindow* mWindow;
-	Ogre::SceneManager* mSceneMgr;
-	Ogre::Camera* mCamera;
-	bool mExitMainLoop;
+    Ogre::Root* mRoot;
+    Ogre::RenderWindow* mWindow;
+    Ogre::SceneManager* mSceneMgr;
+    Ogre::Camera* mCamera;
+    bool mExitMainLoop;
 
-	OIS::InputManager* mInputSystem;
-	OIS::Mouse* mMouse;
-	OIS::Keyboard* mKeyboard;
+    OIS::InputManager* mInputSystem;
+    OIS::Mouse* mMouse;
+    OIS::Keyboard* mKeyboard;
 
-	void parseResources();
-	void setupInput();
+    void parseResources();
+    void setupInput();
 
-	bool keyPressed(const OIS::KeyEvent &e);
-	bool keyReleased(const OIS::KeyEvent &e);
-	bool mouseMoved(const OIS::MouseEvent &e);
-	bool mousePressed(const OIS::MouseEvent &e, OIS::MouseButtonID id);
-	bool mouseReleased(const OIS::MouseEvent &e, OIS::MouseButtonID id);
+    bool keyPressed(const OIS::KeyEvent &e);
+    bool keyReleased(const OIS::KeyEvent &e);
+    bool mouseMoved(const OIS::MouseEvent &e);
+    bool mousePressed(const OIS::MouseEvent &e, OIS::MouseButtonID id);
+    bool mouseReleased(const OIS::MouseEvent &e, OIS::MouseButtonID id);
 
     bool frameStarted(const Ogre::FrameEvent& e);
     bool frameRenderingQueued(const Ogre::FrameEvent& e);
 
-	// NoesisGUI
-	Noesis::Ptr<TicTacToeLogic> mTicTac;
+    // NoesisGUI
+    Noesis::Ptr<TicTacToeLogic> mTicTac;
 
-	void* mUIRoot;
-	void* mUIRenderer;
+    void* mUIRoot;
+    void* mUIRenderer;
 };
 #endif
